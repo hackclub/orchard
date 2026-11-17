@@ -37,7 +37,7 @@ frontend:
   replicas: 2
   image:
     name: frontend
-    tag: "1.87.0"
+    tag: "1.88.0"
   service:
     port: 3000
   resources:
@@ -83,7 +83,7 @@ server:
   replicas: 2
   image:
     name: server
-    tag: "2.95.4"
+    tag: "2.96.0"
   service:
     port: 3001
   resources:
@@ -326,7 +326,7 @@ mcp:
   replicas: 1
   image:
     name: mcp
-    tag: "2.95.4"
+    tag: "2.96.0"
   service:
     port: 3100
   resources:
@@ -849,7 +849,7 @@ r2Proxy:
   replicas: 2
   image:
     name: r2-proxy
-    tag: "0.8.0"
+    tag: "0.8.1"
     # Falls back to the global image.repository. Set this to keep r2-proxy on a
     # registry path the other components have already moved off.
     repository: ""
