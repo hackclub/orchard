@@ -1,7 +1,7 @@
 {
   "id": "greenhouse",
   "name": "Greenhouse",
-  "version": "1.5.6",
+  "version": "1.5.7",
   "publisher": "orchard",
   "description": "Cloud dev sandboxes with coding agents, live editing, previews and share links.",
   "homepage": "https://docs.orchard.hackclub.com/greenhouse/",
@@ -11,7 +11,9 @@
   },
   "requires": {
     "kubernetes": {
-      "crds": ["sandboxes.agents.x-k8s.io"],
+      "crds": [
+        "sandboxes.agents.x-k8s.io"
+      ],
       "verbs": [
         {
           "group": "agents.x-k8s.io",
@@ -57,12 +59,29 @@
       "me/context",
       "users/me/integrations"
     ],
-    "uiAliases": ["sandboxes", "share/sandbox", "integrations/slack", "tour/greenhouse"],
-    "wsAliases": ["sandboxes"],
-    "hostRouting": ["sandbox-previews"],
-    "notificationEvents": ["sandbox"],
-    "notificationCategories": ["agents"],
-    "configSections": ["sandbox-runners", "slack-app", "linear"],
+    "uiAliases": [
+      "sandboxes",
+      "share/sandbox",
+      "integrations/slack",
+      "tour/greenhouse"
+    ],
+    "wsAliases": [
+      "sandboxes"
+    ],
+    "hostRouting": [
+      "sandbox-previews"
+    ],
+    "notificationEvents": [
+      "sandbox"
+    ],
+    "notificationCategories": [
+      "agents"
+    ],
+    "configSections": [
+      "sandbox-runners",
+      "slack-app",
+      "linear"
+    ],
     "settingKeys": [
       "sandbox_runners",
       "slack_app",
@@ -89,11 +108,22 @@
       "get_sandbox_session_transcript",
       "create_sandbox_session_pr"
     ],
-    "sseEvents": ["sandbox"],
-    "auditActions": ["sandbox"],
-    "applyOps": ["sandbox", "vercel"],
-    "deviceNames": ["sandbox-mcp"],
-    "mirrorShards": ["sandboxes"]
+    "sseEvents": [
+      "sandbox"
+    ],
+    "auditActions": [
+      "sandbox"
+    ],
+    "applyOps": [
+      "sandbox",
+      "vercel"
+    ],
+    "deviceNames": [
+      "sandbox-mcp"
+    ],
+    "mirrorShards": [
+      "sandboxes"
+    ]
   },
   "database": {
     "coreReads": {
@@ -107,9 +137,22 @@
         "github_id",
         "github_username"
       ],
-      "organizations": ["id"],
-      "organization_members": ["id", "organization_id", "user_id", "role", "added_at"],
-      "projects": ["id", "organization_id", "name", "slug"],
+      "organizations": [
+        "id"
+      ],
+      "organization_members": [
+        "id",
+        "organization_id",
+        "user_id",
+        "role",
+        "added_at"
+      ],
+      "projects": [
+        "id",
+        "organization_id",
+        "name",
+        "slug"
+      ],
       "environments": [
         "id",
         "project_id",
@@ -119,7 +162,13 @@
         "is_default",
         "is_production"
       ],
-      "environment_shared_vars": ["id", "environment_id", "key", "value", "secret"],
+      "environment_shared_vars": [
+        "id",
+        "environment_id",
+        "key",
+        "value",
+        "secret"
+      ],
       "deployments": [
         "id",
         "project_id",
@@ -149,7 +198,13 @@
         "compose_stack_id",
         "created_at"
       ],
-      "deployment_env_vars": ["id", "deployment_id", "key", "value", "secret"],
+      "deployment_env_vars": [
+        "id",
+        "deployment_id",
+        "key",
+        "value",
+        "secret"
+      ],
       "deployment_volumes": [
         "id",
         "deployment_id",
@@ -160,8 +215,19 @@
         "storage_size",
         "read_only"
       ],
-      "services": ["id", "deployment_id", "created_at"],
-      "service_ports": ["id", "service_id", "name", "port", "target_port", "protocol"],
+      "services": [
+        "id",
+        "deployment_id",
+        "created_at"
+      ],
+      "service_ports": [
+        "id",
+        "service_id",
+        "name",
+        "port",
+        "target_port",
+        "protocol"
+      ],
       "ingresses": [
         "id",
         "deployment_id",
@@ -187,9 +253,29 @@
         "public_port",
         "created_at"
       ],
-      "k8s_objects": ["uid", "api_version", "kind", "namespace", "name", "shard", "manifest"],
-      "k8s_apply_queue": ["id", "status", "last_error", "sandbox_id", "updated_at"],
-      "k8s_mirror_heartbeats": ["shard", "holder", "last_list_at", "healthy", "updated_at"]
+      "k8s_objects": [
+        "uid",
+        "api_version",
+        "kind",
+        "namespace",
+        "name",
+        "shard",
+        "manifest"
+      ],
+      "k8s_apply_queue": [
+        "id",
+        "status",
+        "last_error",
+        "sandbox_id",
+        "updated_at"
+      ],
+      "k8s_mirror_heartbeats": [
+        "shard",
+        "holder",
+        "last_list_at",
+        "healthy",
+        "updated_at"
+      ]
     },
     "pool": 10,
     "adopts": [
@@ -234,7 +320,10 @@
           "key": "defaultRunner",
           "type": "select",
           "label": "Default runner",
-          "options": ["kubernetes", "vercel"],
+          "options": [
+            "kubernetes",
+            "vercel"
+          ],
           "env": "SANDBOX_DEFAULT_RUNNER"
         },
         {
@@ -306,7 +395,10 @@
       "title": "Slack app",
       "description": "Start Greenhouse sessions from Slack.",
       "storageKey": "slack_app",
-      "required": ["signingSecret", "botToken"],
+      "required": [
+        "signingSecret",
+        "botToken"
+      ],
       "fields": [
         {
           "key": "signingSecret",
@@ -333,7 +425,9 @@
       "title": "Linear",
       "description": "Start Greenhouse sessions from Linear issues.",
       "storageKey": "linear_integration",
-      "required": ["webhookSecret"],
+      "required": [
+        "webhookSecret"
+      ],
       "fields": [
         {
           "key": "webhookSecret",

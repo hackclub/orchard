@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.88.0](https://github.com/hackclub/orchard/compare/frontend/v1.87.0...frontend/v1.88.0) (2026-11-17)
+
+
+### Features
+
+* **frontend:** add app pictures ([91dc44e](https://github.com/hackclub/orchard/commit/91dc44e0538064111ed650cd4be44e92080cc131))
+* **frontend:** revamp template discovery ([8365d93](https://github.com/hackclub/orchard/commit/8365d933c7ad4e8a71324d2e171936b6b9630019))
+
+
+### Bug Fixes
+
+* **server:** refuse yaml alias bombs in compose and score ([f7828b6](https://github.com/hackclub/orchard/commit/f7828b6f3ae69ffba03b76ed76d5d96c4ddd4573))
+* **server:** require a fresh sign-in to weaken sign-in ([9d085c7](https://github.com/hackclub/orchard/commit/9d085c7fd82a642913c9c50d223bb36bbcbb8d2d))
+
 ## [1.87.0](https://github.com/hackclub/orchard/compare/frontend/v1.86.1...frontend/v1.87.0) (2026-11-10)
 
 

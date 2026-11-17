@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/hackclub/orchard/compare/r2-proxy/v0.8.0...r2-proxy/v0.8.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **r2-proxy:** bind every key to its own buckets ([0facfa6](https://github.com/hackclub/orchard/commit/0facfa683ab2d70d1b4e7b6576d289f8ec16d524))
+
 ## [0.8.0](https://github.com/hackclub/orchard/compare/r2-proxy/v0.7.1...r2-proxy/v0.8.0) (2026-11-09)
 
 

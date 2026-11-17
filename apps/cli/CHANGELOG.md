@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.43.0](https://github.com/hackclub/orchard/compare/cli/v0.42.0...cli/v0.43.0) (2026-11-17)
+
+
+### Features
+
+* **cli:** set an app picture from the cli ([d32cc77](https://github.com/hackclub/orchard/commit/d32cc779d816262121b10e2671ecba3fd6059d10))
+
 ## [0.42.0](https://github.com/hackclub/orchard/compare/cli/v0.41.1...cli/v0.42.0) (2026-11-09)
 
 

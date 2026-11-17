@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.7](https://github.com/hackclub/orchard/compare/greenhouse/v1.5.6...greenhouse/v1.5.7) (2026-11-17)
+
+
+### Bug Fixes
+
+* **greenhouse:** harden machines that run on runc ([057b90b](https://github.com/hackclub/orchard/commit/057b90bbf4d44a5c33ea28f25dce43a8e94ef274))
+* **mcp:** enforce scope cap on graft tools and api ([e1df4f2](https://github.com/hackclub/orchard/commit/e1df4f2b4ba07bd527d07f26af42975175f58f64))
+* **server:** use a __Host- session cookie ([eb53eed](https://github.com/hackclub/orchard/commit/eb53eed64fd78578cf3134232b2a8182360e87bc))
+
 ## [1.5.6](https://github.com/hackclub/orchard/compare/greenhouse/v1.5.5...greenhouse/v1.5.6) (2026-11-06)
 
 

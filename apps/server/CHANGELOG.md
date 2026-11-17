@@ -1,5 +1,45 @@
 # Changelog
 
+## [2.96.0](https://github.com/hackclub/orchard/compare/server/v2.95.4...server/v2.96.0) (2026-11-17)
+
+
+### Features
+
+* **frontend:** add app pictures ([91dc44e](https://github.com/hackclub/orchard/commit/91dc44e0538064111ed650cd4be44e92080cc131))
+
+
+### Bug Fixes
+
+* **chart:** pass the build cache bucket to r2-proxy ([c15684c](https://github.com/hackclub/orchard/commit/c15684cc190c064a66a7b8371281f3ee533add82))
+* **greenhouse:** harden machines that run on runc ([057b90b](https://github.com/hackclub/orchard/commit/057b90bbf4d44a5c33ea28f25dce43a8e94ef274))
+* **install:** pass registry and tunnel secrets on stdin ([2567151](https://github.com/hackclub/orchard/commit/2567151cdbf510beedfb9b2b4bae44527324173c))
+* **mcp:** enforce scope cap on graft tools and api ([e1df4f2](https://github.com/hackclub/orchard/commit/e1df4f2b4ba07bd527d07f26af42975175f58f64))
+* **server:** batch mirror heartbeats every 20s ([000dc2d](https://github.com/hackclub/orchard/commit/000dc2d554b699051e7dbe6cd06606d42de5a28d))
+* **server:** clone manual builds with the app token ([f59afd1](https://github.com/hackclub/orchard/commit/f59afd1cb61146dc41a0ee54b07aea3d0af7f816))
+* **server:** detach removed managed deployment volumes ([#268](https://github.com/hackclub/orchard/issues/268)) ([aab9fbd](https://github.com/hackclub/orchard/commit/aab9fbd4a8efc74f4b8c7a65a2f040c81e0184d0))
+* **server:** hide invitations from unverified accounts ([75fd751](https://github.com/hackclub/orchard/commit/75fd75185b36f5aef0e426ef607b4f070cfa218b))
+* **server:** keep a service domain in step with its ingress ([e884254](https://github.com/hackclub/orchard/commit/e884254f1c538d0a15ac0e084d033124ddd161d7))
+* **server:** keep shared s3 cache keys out of builds ([#4](https://github.com/hackclub/orchard/issues/4)) ([520ed46](https://github.com/hackclub/orchard/commit/520ed463f38c4b7f3e91afb3678bc6612790055e))
+* **server:** let the backup proxy read key purposes ([12b1a5a](https://github.com/hackclub/orchard/commit/12b1a5a935a6a7bdb32bba270f1f9eef41bfaad7))
+* **server:** limit sandbox mcp tokens to deploy scope ([7a10015](https://github.com/hackclub/orchard/commit/7a1001525d575c7bdd79fa0b51489054367e85ff))
+* **server:** log lease, heartbeat and stats fallbacks ([8257259](https://github.com/hackclub/orchard/commit/825725942c68c80d480a9e96d02f407833b32588))
+* **server:** measure databases on shared volumes ([e84003e](https://github.com/hackclub/orchard/commit/e84003e4de31fd7d3a25e08929631fd5dd24fd4a))
+* **server:** measure shared data dirs every five minutes ([fff677d](https://github.com/hackclub/orchard/commit/fff677d7b8ab9aba497b793881878b1ba85e2e56))
+* **server:** name the annotation a build sandbox refuses ([9e3bfc6](https://github.com/hackclub/orchard/commit/9e3bfc6f6e223b2af3f852f11bf9f7ae73f34bff))
+* **server:** never cache the orchardctl signing stage ([4df3d9b](https://github.com/hackclub/orchard/commit/4df3d9b872b2b9f5d47e9e0cf728d8462f570f9c))
+* **server:** prune old images on any registry ([#265](https://github.com/hackclub/orchard/issues/265)) ([f8806af](https://github.com/hackclub/orchard/commit/f8806afa446ab5581d70e94aa0d41181e0bc3469))
+* **server:** read database stats from the metrics store ([3b80a48](https://github.com/hackclub/orchard/commit/3b80a4852b677ae1255d764ed7000269bda04485))
+* **server:** refuse yaml alias bombs in compose and score ([f7828b6](https://github.com/hackclub/orchard/commit/f7828b6f3ae69ffba03b76ed76d5d96c4ddd4573))
+* **server:** relax the primary lease on single-instance databases ([d407a0c](https://github.com/hackclub/orchard/commit/d407a0c2062cdb0b2b7a64a97296d44d95a7f42f))
+* **server:** renew held leases with one write every 10s ([df6e230](https://github.com/hackclub/orchard/commit/df6e230534bb6cb7530b97595ab7c532d4eff18a))
+* **server:** repin skopeo after quay re-pushed v1.24.1 again ([e0b03e7](https://github.com/hackclub/orchard/commit/e0b03e787b0147419f5b6aad2bf28821c07aa5a9))
+* **server:** require a fresh sign-in to weaken sign-in ([9d085c7](https://github.com/hackclub/orchard/commit/9d085c7fd82a642913c9c50d223bb36bbcbb8d2d))
+* **server:** run the mcp image from compiled output ([9e06cdc](https://github.com/hackclub/orchard/commit/9e06cdcebb81a94b4b51877985d7909415e5882b))
+* **server:** skip the metrics store when it isn't there ([93852ec](https://github.com/hackclub/orchard/commit/93852ec59e1f7438d7d6239033ad4a7674c1e0fc))
+* **server:** stop listing backups from pruning them ([3d98b3f](https://github.com/hackclub/orchard/commit/3d98b3f9bc619e593cb44aa002c340ad2f4f06c9))
+* **server:** use a __Host- session cookie ([eb53eed](https://github.com/hackclub/orchard/commit/eb53eed64fd78578cf3134232b2a8182360e87bc))
+* **server:** verify oidc emails and add pkce ([13f17f0](https://github.com/hackclub/orchard/commit/13f17f0489fc85e9c58c9074115e9fcfa765a66b))
+
 ## [2.95.4](https://github.com/hackclub/orchard/compare/server/v2.95.3...server/v2.95.4) (2026-11-11)
 
 

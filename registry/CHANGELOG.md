@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/hackclub/orchard/compare/templates/v0.5.0...templates/v0.6.0) (2026-11-17)
+
+
+### Features
+
+* **frontend:** revamp template discovery ([8365d93](https://github.com/hackclub/orchard/commit/8365d933c7ad4e8a71324d2e171936b6b9630019))
+
 ## [0.5.0](https://github.com/hackclub/orchard/compare/templates/v0.4.0...templates/v0.5.0) (2026-10-14)
 
 

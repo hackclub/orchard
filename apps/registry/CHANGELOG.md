@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/hackclub/orchard/compare/registry/v0.8.0...registry/v0.8.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **registry:** require https graft homepages ([7d9c05b](https://github.com/hackclub/orchard/commit/7d9c05bf202eb0f1b3ee1d43a636bf985f249651))
+
 ## [0.8.0](https://github.com/hackclub/orchard/compare/registry/v0.7.2...registry/v0.8.0) (2026-11-09)
 
 
