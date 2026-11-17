@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/hackclub/orchard/compare/registry/v0.8.1...registry/v0.8.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* **ci:** sign grafts in their own keyed job ([bd4c61c](https://github.com/hackclub/orchard/commit/bd4c61cdae61c49c33d74a87fe5d3ae8229fda90))
+
 ## [0.8.1](https://github.com/hackclub/orchard/compare/registry/v0.8.0...registry/v0.8.1) (2026-11-17)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/hackclub/orchard/compare/templates/v0.6.0...templates/v0.6.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **templates:** bump the templates moved off ai.hackclub ([df863fd](https://github.com/hackclub/orchard/commit/df863fdbacd1f058c8817fae2b3be86c7bbaf0a0))
+
 ## [0.6.0](https://github.com/hackclub/orchard/compare/templates/v0.5.0...templates/v0.6.0) (2026-11-17)
 
 
