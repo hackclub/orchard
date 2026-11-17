@@ -43,9 +43,14 @@ import { BUILDER_NAMESPACE } from './builder-namespace';
 import {
   BUILD_CACHE_KEY_TTL_MS,
   BUILD_CACHE_PURPOSE,
+  buildkitdEnvPreamble,
   mintBuildCacheKey,
+  S3_CACHE_KEY_ENV,
+  S3_CACHE_SECRET_ENV,
   S3_TOUCH_REFRESH,
   s3CacheRoute,
+  s3CacheRouteNotice,
+  sharedS3KeyAllowed,
   tenantWritePrefix,
   type S3CacheTarget
 } from './build-cache-s3';
@@ -216,21 +221,6 @@ fi
 }
 
 type BuildctlArg = string | { shell: string };
-
-const S3_CACHE_KEY_ENV = 'ORCHARD_S3_CACHE_KEY_ID';
-const S3_CACHE_SECRET_ENV = 'ORCHARD_S3_CACHE_SECRET';
-
-const isSafeS3Credential = (value: string | undefined): boolean =>
-  !value || /^[A-Za-z0-9+/=_.-]+$/.test(value);
-
-const withS3CacheCreds = (attrs: string): BuildctlArg => ({
-  shell:
-    shellQuote(attrs) +
-    ',access_key_id=$' +
-    S3_CACHE_KEY_ENV +
-    ',secret_access_key=$' +
-    S3_CACHE_SECRET_ENV
-});
 
 const renderBuildctlArg = (arg: BuildctlArg) =>
   typeof arg === 'string' ? shellQuote(arg) : arg.shell;
@@ -926,7 +916,12 @@ export class ImageBuilderService {
       await this.upsertDockerConfigSecret(this.registrySecretName, this.harborAuths());
     }
 
-    if (this.s3CacheEnabled && this.s3AccessKeyId && this.s3SecretAccessKey) {
+    if (
+      this.s3CacheEnabled &&
+      sharedS3KeyAllowed(process.env) &&
+      this.s3AccessKeyId &&
+      this.s3SecretAccessKey
+    ) {
       const s3SecretName = 'buildkit-s3-cache-creds';
       try {
         await coreApi.readNamespacedSecret(s3SecretName, this.builderNamespace);
@@ -1061,7 +1056,11 @@ ${registryConfigs}
     cacheTenantKey: string | undefined
   ): Promise<S3CachePlan> {
     const route = this.s3CacheRoute();
-    if (route.via === 'direct') return { kind: 'direct' };
+    if (route.via === 'direct') {
+      if (sharedS3KeyAllowed(process.env)) return { kind: 'direct' };
+      console.warn(`[ImageBuilder] ${s3CacheRouteNotice(route, process.env).message}`);
+      return { kind: 'off' };
+    }
     try {
       const organizationId = deploymentId ? await this.organizationOf(deploymentId) : null;
       const writePrefix = tenantWritePrefix(route.basePrefix, cacheTenantKey);
@@ -1127,16 +1126,8 @@ ${registryConfigs}
 
   private logS3CacheRoute(): void {
     if (!this.s3CacheEnabled || this.localCacheEnabled) return;
-    const route = this.s3CacheRoute();
-    if (route.via === 'proxy') {
-      console.log(
-        `[ImageBuilder] S3 build cache: per-tenant keys scoped to ${route.basePrefix}<tenant>/ through the r2-proxy`
-      );
-    } else {
-      console.warn(
-        `[ImageBuilder] S3 build cache uses the instance-wide key, so any build that can read its environment reaches every tenant's cache: ${route.reason}`
-      );
-    }
+    const notice = s3CacheRouteNotice(this.s3CacheRoute(), process.env);
+    console[notice.level](`[ImageBuilder] ${notice.message}`);
   }
 
   private buildCacheArgs(imageName?: string, s3Plan?: S3CachePlan): BuildctlArg[] {
@@ -1150,8 +1141,8 @@ ${registryConfigs}
       return ['--import-cache', importCache, '--export-cache', exportCache];
     }
 
-    if (s3Plan?.kind === 'off') return [];
-    const scoped = s3Plan?.kind === 'scoped' ? s3Plan.scoped.target : null;
+    if (!s3Plan || s3Plan.kind === 'off') return [];
+    const scoped = s3Plan.kind === 'scoped' ? s3Plan.scoped.target : null;
     const endpoint = scoped?.endpoint ?? this.s3Endpoint;
     const bucket = scoped?.bucket ?? this.s3Bucket;
     const region = scoped?.region ?? this.s3Region;
@@ -1184,20 +1175,7 @@ ${registryConfigs}
     const importCache = `type=s3,endpoint_url=${endpoint},bucket=${bucket},region=${region},prefix=${cachePrefix},use_path_style=true${touch}`;
     const exportCache = `type=s3,endpoint_url=${endpoint},bucket=${bucket},region=${region},prefix=${cachePrefix},mode=min,use_path_style=true${touch}`;
 
-    if (
-      !scoped &&
-      (!isSafeS3Credential(this.s3AccessKeyId) || !isSafeS3Credential(this.s3SecretAccessKey))
-    ) {
-      console.warn('[ImageBuilder] S3 cache credentials contain unsupported characters, cache off');
-      return [];
-    }
-
-    return [
-      '--import-cache',
-      withS3CacheCreds(importCache),
-      '--export-cache',
-      withS3CacheCreds(exportCache)
-    ];
+    return ['--import-cache', importCache, '--export-cache', exportCache];
   }
 
   private createDepotContainer(opts: {
@@ -1459,8 +1437,9 @@ fi
     injectGitSha = false,
     buildDirPreamble = ''
   ): string {
-    const cacheArgs = this.buildCacheArgs();
-    const hasCacheEnabled = cacheArgs.length > 0;
+    const hasCacheEnabled = buildctlArgs.some(
+      (arg) => arg === '--import-cache' || arg === '--export-cache'
+    );
 
     const gitShaPreamble = injectGitSha ? ImageBuilderService.GIT_SHA_PREAMBLE : '';
     const gitShaOpt = injectGitSha ? ImageBuilderService.GIT_SHA_BUILDCTL_OPT : '';
@@ -1846,7 +1825,7 @@ ls -la /workspace
     const s3Plan: S3CachePlan =
       !daemonIp && !buildWithDepot && !this.localCacheEnabled && this.s3CacheEnabled
         ? await this.planS3Cache(deploymentId, cacheTenantKey)
-        : { kind: 'direct' };
+        : { kind: 'off' };
 
     const buildctlArgs = this.generateBuildctlArgs({
       dockerfilePath,
@@ -1962,7 +1941,12 @@ exit $rc`
             securityContext: builderContainerSecurityContext(this.builderPosture),
             command: ['/bin/sh', '-c'],
             args: [
-              this.generateBuildScriptWithCacheFallback(scriptArgs, injectGitSha, buildDirPreamble)
+              buildkitdEnvPreamble() +
+                this.generateBuildScriptWithCacheFallback(
+                  scriptArgs,
+                  injectGitSha,
+                  buildDirPreamble
+                )
             ],
             workingDir: '/workspace',
             env: [
@@ -2191,7 +2175,7 @@ ${rootlessDaemonStart()}`
 # our daemon instead of spawning its own.
 printf '#!/bin/sh\\nexec buildctl "$@"\\n' > /usr/bin/buildctl-daemonless.sh
 
-buildkitd $BUILDKITD_FLAGS &
+$BUILDKITD $BUILDKITD_FLAGS &
 DAEMON_PID=$!
 for i in $(seq 1 100); do
   buildctl debug workers >/dev/null 2>&1 && break
@@ -2204,7 +2188,7 @@ done`;
       buildkitContainer.args = [
         `mkdir -p /output
 ${this.scratchMountPreamble}
-${daemonStart}
+${buildkitdEnvPreamble()}${daemonStart}
 
 ( ${innerScript} ); rc=$?
 

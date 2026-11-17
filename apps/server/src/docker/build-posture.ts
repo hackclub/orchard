@@ -112,7 +112,7 @@ ${innerScript}`;
 }
 
 export function rootlessDaemonStart(): string {
-  return `rootlesskit buildkitd $BUILDKITD_FLAGS --addr "$ORCHARD_BUILDKIT_ADDR" &
+  return `$BUILDKITD_ENV rootlesskit buildkitd $BUILDKITD_FLAGS --addr "$ORCHARD_BUILDKIT_ADDR" &
 DAEMON_PID=$!
 for i in $(seq 1 100); do
   buildctl --addr "$ORCHARD_BUILDKIT_ADDR" debug workers >/dev/null 2>&1 && break

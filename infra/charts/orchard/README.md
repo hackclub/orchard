@@ -449,7 +449,7 @@ is the single place the MCP's address is configured.
 | `builders.harbor.password` | `""` | Registry password. Required when `hosts` is set. |
 | `builders.harbor.hosts` | `[]` | Hosts the credentials apply to. |
 | `builders.httpRegistries` | `[harbor-core.harbor.svc.cluster.local]` | Registries BuildKit talks plain HTTP to. Anything not listed is HTTPS. A self-host running zot lists `zot.orchard.svc.cluster.local:5000`. |
-| `builders.r2.accessKeyId` | `""` | Cloudflare R2 access key for BuildKit S3-style cache. |
+| `builders.r2.accessKeyId` | `""` | Instance-wide R2 access key for the BuildKit S3 cache. Builds use it only with `BUILDKIT_S3_SHARED_KEY=true`, because every build can read it. Single-tenant instances only; otherwise let the r2-proxy carry the cache. |
 | `builders.r2.secretAccessKey` | `""` | Cloudflare R2 secret. |
 | `builders.quota.requestsCpu` | `"16"` | Namespace ResourceQuota: total CPU requests. |
 | `builders.quota.requestsMemory` | `"32Gi"` | Total memory requests. |

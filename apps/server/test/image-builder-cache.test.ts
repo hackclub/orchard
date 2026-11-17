@@ -16,12 +16,22 @@ import type { V1Container, V1Job, V1Secret } from '@kubernetes/client-node';
 import { ImageBuilderService } from '../src/docker/image-builder.service';
 
 type JobOptions = Parameters<ImageBuilderService['createBuildJob']>[0];
-type BuildCall = { args: string[]; cwd: string; done: boolean };
+type BuildCall = {
+  args: string[];
+  cwd: string;
+  done: boolean;
+  awsKey?: string;
+};
+type ProcessCall = { command: string; args: string[]; env: Record<string, string> };
+
+const SHARED_KEY_ID = 'AKIASHAREDCACHEKEY';
+const SHARED_SECRET = 'shared/cache+secret=value';
 
 async function createJob(
   t: TestContext,
   options: {
     backend?: 'local' | 's3' | 'none';
+    posture?: 'vm-sandbox' | 'rootless';
     sidecar?: boolean;
     daemon?: 'ready' | 'unavailable' | 'absent';
     sourceCpuLimit?: string;
@@ -37,8 +47,11 @@ async function createJob(
     BUILDKIT_S3_BUCKET: 'test-build-cache',
     BUILDKIT_S3_REGION: 'auto',
     BUILDKIT_S3_CACHE_PREFIX: 'buildkit-cache/',
+    BUILDKIT_S3_SHARED_KEY: options.backend === 's3' ? 'true' : undefined,
+    BACKUP_PROXY_ENABLED: undefined,
     BUILDER_SIDECAR_PUSH: String(options.sidecar !== false),
-    BUILDER_RUNTIME_CLASS: 'kata',
+    BUILDER_RUNTIME_CLASS: options.posture === 'rootless' ? undefined : 'kata',
+    BUILDER_ALLOW_PRIVILEGED_ON_HOST: undefined,
     BUILDER_SCRATCH_MODE: 'tmpfs',
     BUILDER_WORKSPACE_TMPFS: 'false',
     BUILDER_SOURCE_CPU_LIMIT: options.sourceCpuLimit,
@@ -135,14 +148,22 @@ function executeBuilder(
     writeFileSync(join(meta, 'dir'), join(workspace, options.railpackDirectory));
   }
   const callsFile = join(directory, 'calls.jsonl');
+  const processFile = join(directory, 'processes.jsonl');
   writeFileSync(callsFile, '');
+  writeFileSync(processFile, '');
+  const recorder = join(directory, 'record.js');
+  writeFileSync(
+    recorder,
+    `require('node:fs').appendFileSync(process.env.PROCESS_FILE, JSON.stringify({ command: process.argv[2], args: process.argv.slice(3), env: process.env }) + '\\n');\n`
+  );
   writeFileSync(
     join(bin, 'buildctl'),
     `#!/usr/bin/env node
 const fs = require('node:fs');
 const args = process.argv.slice(2);
+fs.appendFileSync(process.env.PROCESS_FILE, JSON.stringify({ command: 'buildctl', args, env: process.env }) + '\\n');
 if (args[0] === 'debug') process.exit(0);
-fs.appendFileSync(process.env.CALLS_FILE, JSON.stringify({ args, cwd: process.cwd(), done: fs.existsSync(process.env.OUTPUT_DIR + '/.done') }) + '\\n');
+fs.appendFileSync(process.env.CALLS_FILE, JSON.stringify({ args, cwd: process.cwd(), done: fs.existsSync(process.env.OUTPUT_DIR + '/.done'), awsKey: process.env.AWS_ACCESS_KEY_ID }) + '\\n');
 const outputAt = args.indexOf('--output');
 if (process.env.FAIL_BUILD === 'true' && outputAt !== -1) process.exit(23);
 if (process.env.FAIL_CACHE === 'true' && outputAt === -1) process.exit(42);
@@ -159,10 +180,20 @@ if (exportAt !== -1 && args[exportAt + 1].startsWith('type=local,')) {
 `,
     { mode: 0o755 }
   );
-  writeFileSync(join(bin, 'buildctl-daemonless.sh'), '#!/bin/sh\nexec buildctl "$@"\n', {
+  writeFileSync(
+    join(bin, 'buildctl-daemonless.sh'),
+    '#!/bin/sh\n${BUILDKITD:-buildkitd} $BUILDKITD_FLAGS >/dev/null 2>&1 &\npid=$!\nbuildctl "$@"\nrc=$?\nkill $pid\nwait $pid\nexit $rc\n',
+    { mode: 0o755 }
+  );
+  writeFileSync(
+    join(bin, 'buildkitd'),
+    `#!/bin/sh\ntrap 'kill $child 2>/dev/null; exit 0' TERM\nnode '${recorder}' buildkitd "$@"\nsleep 30 >/dev/null 2>&1 &\nchild=$!\nwait $child\n`,
+    { mode: 0o755 }
+  );
+  writeFileSync(join(bin, 'rootlesskit'), '#!/bin/sh\nROOTLESSKIT_PARENT=1 exec "$@"\n', {
     mode: 0o755
   });
-  writeFileSync(join(bin, 'buildkitd'), '#!/bin/sh\nexec sleep 30\n', { mode: 0o755 });
+  writeFileSync(join(bin, 'unshare'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
   const builder = generated.job.spec!.template.spec!.containers.find(
     (container) => container.name === 'buildkit'
   )!;
@@ -178,6 +209,9 @@ if (exportAt !== -1 && args[exportAt + 1].startsWith('type=local,')) {
   let script = builder.args![0];
   for (const [source, destination] of [
     ['/usr/bin/buildctl-daemonless.sh', join(bin, 'buildctl-daemonless.sh')],
+    ['/tmp/buildkitd-env', join(directory, 'buildkitd-env')],
+    ['/tmp/orchard-run', join(directory, 'run')],
+    ['/tmp/orchard-bin', bin],
     ['/tmp/cache-export.tar', join(directory, 'cache-export.tar')],
     ['/cache/buildkit', cache],
     ['/orchard-build', meta],
@@ -193,6 +227,7 @@ if (exportAt !== -1 && args[exportAt + 1].startsWith('type=local,')) {
       ...environment,
       PATH: `${bin}:${process.env.PATH}`,
       CALLS_FILE: callsFile,
+      PROCESS_FILE: processFile,
       OUTPUT_DIR: output,
       FAIL_BUILD: String(options.failBuild ?? false),
       FAIL_CACHE: String(options.failCache ?? false)
@@ -204,7 +239,11 @@ if (exportAt !== -1 && args[exportAt + 1].startsWith('type=local,')) {
     .split('\n')
     .filter(Boolean)
     .map((line) => JSON.parse(line));
-  return { result, calls, sha, workspace, output, cache };
+  const processes: ProcessCall[] = readFileSync(processFile, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+  return { result, calls, processes, sha, workspace, output, cache };
 }
 
 function values(call: BuildCall, option: string): string[] {
@@ -463,7 +502,7 @@ process.exit(process.env.FAIL_INSTALL === 'true' ? 1 : 0);
   });
 }
 
-test('S3 cache credentials travel as cache attributes, never as ambient AWS_ env', async (t) => {
+test('the S3 cache key reaches buildkitd through its environment, never a command line', async (t) => {
   const generated = await createJob(t, { backend: 's3' });
   const builder = generated.job.spec!.template.spec!.containers.find((c) => c.name === 'buildkit')!;
   const names = (builder.env ?? []).map((e) => e.name);
@@ -474,9 +513,68 @@ test('S3 cache credentials travel as cache attributes, never as ambient AWS_ env
   assert.ok(names.includes('ORCHARD_S3_CACHE_KEY_ID'));
   assert.ok(names.includes('ORCHARD_S3_CACHE_SECRET'));
   const script = builder.args![0];
-  assert.match(script, /access_key_id=\$ORCHARD_S3_CACHE_KEY_ID/);
-  assert.match(script, /secret_access_key=\$ORCHARD_S3_CACHE_SECRET/);
+  assert.doesNotMatch(script, /access_key_id|secret_access_key|session_token/);
+  assert.match(script, /type=s3,/);
 });
+
+const credentialPostures = [
+  { name: 'rootless', options: { posture: 'rootless' as const } },
+  { name: 'sandboxed with sidecar push', options: { posture: 'vm-sandbox' as const } },
+  {
+    name: 'sandboxed with direct push',
+    options: { posture: 'vm-sandbox' as const, sidecar: false }
+  }
+];
+
+for (const { name, options } of credentialPostures) {
+  for (const buildType of ['dockerfile', 'railpack'] as const) {
+    test(`${name} ${buildType} build keeps the S3 cache key out of every process argv`, async (t) => {
+      const generated = await createJob(t, {
+        backend: 's3',
+        ...options,
+        build: {
+          buildType,
+          envVars: {
+            AWS_ACCESS_KEY_ID: 'user-asset-key',
+            AWS_SESSION_TOKEN: 'user-session-token',
+            AWS_PROFILE: 'user-profile'
+          }
+        }
+      });
+      generated.secrets.set('buildkit-s3-cache-creds', {
+        stringData: { AWS_ACCESS_KEY_ID: SHARED_KEY_ID, AWS_SECRET_ACCESS_KEY: SHARED_SECRET }
+      });
+      const execution = executeBuilder(t, generated);
+      assert.equal(execution.result.status, 0, execution.result.stderr);
+
+      const daemons = execution.processes.filter((p) => p.command === 'buildkitd');
+      assert.equal(daemons.length, 1);
+      assert.equal(daemons[0].env.AWS_ACCESS_KEY_ID, SHARED_KEY_ID);
+      assert.equal(daemons[0].env.AWS_SECRET_ACCESS_KEY, SHARED_SECRET);
+      assert.equal(daemons[0].env.AWS_SESSION_TOKEN, undefined);
+      assert.equal(daemons[0].env.AWS_PROFILE, undefined);
+      assert.equal(daemons[0].env.ORCHARD_S3_CACHE_KEY_ID, undefined);
+      assert.equal(daemons[0].env.ORCHARD_S3_CACHE_SECRET, undefined);
+      assert.equal(
+        daemons[0].env.ROOTLESSKIT_PARENT,
+        options.posture === 'rootless' ? '1' : undefined
+      );
+
+      const builds = execution.calls.filter((call) => values(call, '--import-cache').length > 0);
+      assert.ok(builds.length > 0);
+      assert.match(values(builds[0], '--import-cache')[0], /^type=s3,/);
+      for (const call of execution.calls) assert.equal(call.awsKey, 'user-asset-key');
+
+      assert.ok(execution.processes.length > 0);
+      for (const proc of execution.processes) {
+        const argv = proc.args.join(' ');
+        assert.equal(argv.includes(SHARED_KEY_ID), false, `${proc.command} argv: ${argv}`);
+        assert.equal(argv.includes(SHARED_SECRET), false, `${proc.command} argv: ${argv}`);
+        assert.doesNotMatch(argv, /access_key_id|secret_access_key|session_token/);
+      }
+    });
+  }
+}
 
 test('Super Builds with sidecar push hand the Dockerfile session no Harbor login', async (t) => {
   const previous = process.env.HARBOR_PASSWORD;

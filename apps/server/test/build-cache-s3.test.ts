@@ -5,6 +5,8 @@ import { ImageBuilderService } from '../src/docker/image-builder.service';
 import {
   PROXIED_CACHE_PREFIX,
   s3CacheRoute,
+  s3CacheRouteNotice,
+  sharedS3KeyAllowed,
   tenantCacheSegment,
   tenantWritePrefix
 } from '../src/docker/build-cache-s3';
@@ -38,6 +40,26 @@ test('the proxy carries the build cache whenever it serves the cache bucket', ()
   assert.equal(s3CacheRoute(proxy, null).via, 'direct');
 });
 
+test('the instance-wide cache key needs an explicit single-tenant opt-in', () => {
+  const direct = s3CacheRoute({}, 'b');
+  assert.equal(sharedS3KeyAllowed({}), false);
+  assert.equal(sharedS3KeyAllowed({ BUILDKIT_S3_SHARED_KEY: 'false' }), false);
+  assert.equal(sharedS3KeyAllowed({ BUILDKIT_S3_SHARED_KEY: 'yes' }), false);
+  assert.equal(sharedS3KeyAllowed({ BUILDKIT_S3_SHARED_KEY: ' TRUE ' }), true);
+  const refused = s3CacheRouteNotice(direct, {});
+  assert.equal(refused.level, 'error');
+  assert.match(refused.message, /OFF/);
+  assert.match(refused.message, /BUILDKIT_S3_SHARED_KEY=true/);
+  const optedIn = s3CacheRouteNotice(direct, { BUILDKIT_S3_SHARED_KEY: 'true' });
+  assert.equal(optedIn.level, 'warn');
+  assert.match(optedIn.message, /single-tenant/);
+  const proxied = s3CacheRouteNotice(
+    s3CacheRoute({ BACKUP_PROXY_ENABLED: 'true', BACKUP_PROXY_ENDPOINT: 'http://p:9000' }, 'b'),
+    { BUILDKIT_S3_SHARED_KEY: 'true' }
+  );
+  assert.equal(proxied.level, 'log');
+});
+
 test('the proxied cache prefix cannot collide with a database backup prefix', () => {
   assert.ok(!/^[a-z0-9]/.test(PROXIED_CACHE_PREFIX));
   assert.equal(tenantWritePrefix(PROXIED_CACHE_PREFIX, 'Acme Web'), '_build-cache/acme-web/');
@@ -55,6 +77,7 @@ const baseEnv = {
   BUILDKIT_S3_SECRET_ACCESS_KEY: 'bucketwidesecret',
   BUILDKIT_S3_VIA_PROXY: undefined,
   BUILDKIT_S3_CACHE_PREFIX: undefined,
+  BUILDKIT_S3_SHARED_KEY: undefined,
   BACKUP_PROXY_ENABLED: 'true',
   BACKUP_PROXY_ENDPOINT: 'http://r2-proxy.orchard-r2-proxy.svc.cluster.local:9000',
   R2_ENDPOINT: 'https://account.r2.example',
@@ -153,6 +176,9 @@ test('S3 build cache goes through the proxy with a key limited to the tenant pre
   assert.match(script, /touch_refresh=/);
   assert.doesNotMatch(script, /account\.r2\.example/);
   assert.doesNotMatch(script, /bucketwide/);
+  assert.doesNotMatch(script, /access_key_id|secret_access_key|session_token/);
+  assert.equal(JSON.stringify(job()).includes(minted[0].secret), false);
+  assert.equal(JSON.stringify(job()).includes(minted[0].accessKey), false);
 
   const env = builder(job()).env!;
   const keyRef = env.find((e) => e.name === 'ORCHARD_S3_CACHE_KEY_ID')!.valueFrom!.secretKeyRef!;
@@ -174,14 +200,37 @@ test('every build gets its own key, never the previous one', async (t) => {
   assert.notEqual(first.minted[0].secret, second.minted[0].secret);
 });
 
-test('without the proxy the legacy instance key stays, and says so', async (t) => {
-  const { run, minted, job } = await createJob(t, { BACKUP_PROXY_ENABLED: undefined });
+for (const direct of [
+  { name: 'the proxy is off', env: { BACKUP_PROXY_ENABLED: undefined } },
+  { name: 'the proxy is turned away', env: { BUILDKIT_S3_VIA_PROXY: 'false' } },
+  { name: 'the bucket is not the proxy one', env: { BUILDKIT_S3_BUCKET: 'elsewhere' } }
+]) {
+  test(`when ${direct.name}, builds never get the instance-wide key unless opted in`, async (t) => {
+    const { run, minted, job } = await createJob(t, direct.env);
+    await run;
+    assert.equal(minted.length, 0);
+    const container = builder(job());
+    assert.doesNotMatch(container.args![0], /type=s3/);
+    assert.ok(!JSON.stringify(container.env).includes('buildkit-s3-cache-creds'));
+    assert.ok(!JSON.stringify(container.env).includes('ORCHARD_S3_CACHE'));
+  });
+}
+
+test('a single-tenant opt-in keeps the instance key, in the environment only', async (t) => {
+  const { run, minted, job } = await createJob(t, {
+    BACKUP_PROXY_ENABLED: undefined,
+    BUILDKIT_S3_SHARED_KEY: 'true'
+  });
   await run;
   assert.equal(minted.length, 0);
-  const env = builder(job()).env!;
-  const ref = env.find((e) => e.name === 'ORCHARD_S3_CACHE_KEY_ID')!.valueFrom!.secretKeyRef!;
+  const container = builder(job());
+  const ref = container.env!.find((e) => e.name === 'ORCHARD_S3_CACHE_KEY_ID')!.valueFrom!
+    .secretKeyRef!;
   assert.equal(ref.name, 'buildkit-s3-cache-creds');
-  assert.match(builder(job()).args![0], /account\.r2\.example/);
+  const script = container.args![0];
+  assert.match(script, /account\.r2\.example/);
+  assert.doesNotMatch(script, /access_key_id|secret_access_key/);
+  assert.doesNotMatch(script, /bucketwide/);
 });
 
 test('when a scoped key cannot be minted the build runs without the S3 cache', async (t) => {

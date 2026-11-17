@@ -257,7 +257,7 @@ Rule for this document: where something is still unfixed it is described as hard
 - Local cache is a per-tenant subPath of the cache PVC (`cacheSubPath`).
 - Registry login: the build pod pushes from a separate `pusher` container; BuildKit holds no login. In rootless posture this is always so (`effectiveSidecarPush`).
 - Image ownership: ValidatingAdmissionPolicy `orchard-tenant-images` (`registryImagePolicy`, `apps/server/src/kubernetes/registry-image-policy.ts`, installed by `RegistryImagePolicyService`) rejects a pod that names another project's repository on the platform registry. Image references are parsed and registry hosts canonicalised before ownership checks (`image-ref.test.ts`). `REGISTRY_IMAGE_POLICY`: unset or `auto` enforces unless an existing image would break (then warns and logs the blockers), `enforce`, `warn`, `off`; any other value enforces. The installer sets `enforce`. The rule is reconciled every five minutes.
-- S3 build cache: credentials are passed as cache attributes `ORCHARD_S3_CACHE_*`, not `AWS_*`. When the r2-proxy is enabled and serves the cache bucket (`s3CacheRoute`, `apps/server/src/docker/build-cache-s3.ts`), each build gets its own key valid for two hours that can only read and write `_build-cache/<project>/` in that bucket (`mintBuildCacheKey`, `tenantWritePrefix`). Without the proxy the instance-wide key is used and the server warns at startup.
+- S3 build cache: when the r2-proxy is enabled and serves the cache bucket (`s3CacheRoute`, `apps/server/src/docker/build-cache-s3.ts`), each build gets its own key valid for two hours that can only read and write `_build-cache/<project>/` in that bucket (`mintBuildCacheKey`, `tenantWritePrefix`). The key reaches only `buildkitd`'s environment, through `buildkitdEnvPreamble`, which also drops the app's `AWS_*` variables; it is never in a command line or in cache attributes, which BuildKit forwards to `# syntax=` frontends. Without the proxy the S3 cache is off (`s3CacheRouteNotice` logs an error) unless `BUILDKIT_S3_SHARED_KEY=true` opts a single-tenant instance into the instance-wide key.
 - Build egress is allow-listed (`builder-network-policy`, `orchard.builderEgressRules`) with no apiserver, no node addresses and no metadata; Cilium entity denies are added where Cilium is present. fc-builder rejects dot and empty path segments in its push proxy.
 - Secrets: build secret names come from 128 random bits and are never overwritten; the image-builder role no longer has Secret access; `build-args.ts`, `build-log-redaction.ts`, `buildSafeEnv`.
 
@@ -273,7 +273,7 @@ Rule for this document: where something is still unfixed it is described as hard
 - The registry login is one credential for the platform project (`harbor-registry-creds` in `templates/builders.yaml`; `harborAuths` defaults the username to `admin`). Harbor robot accounts cannot narrow this because their permissions apply per Harbor project and all tenants share one. A leaked pusher login reaches every tenant's repository.
 - With `BUILDER_SIDECAR_PUSH=false` in sandbox or privileged posture, and for Super builds with it set to `false`, the shared login is placed in the build or Depot session.
 - Without Kata, builds share the node kernel (I4).
-- When the r2-proxy is not used, the S3 cache key is instance-wide.
+- In rootless posture `RUN` steps share the build container's PID namespace and uid (`--oci-worker-no-process-sandbox`), so they can read `buildkitd`'s environment and everything else in the build container, including the build's own cache key. With `BUILDKIT_S3_SHARED_KEY=true` that key is instance-wide and reaches every tenant's cache.
 
 **Residual risk.** The shared registry login. A compromise of the pusher container. Kernel exploits from a Dockerfile `RUN` step on the node kernel.
 
@@ -317,7 +317,7 @@ Rule for this document: where something is still unfixed it is described as hard
 
 **Required config.** `r2Proxy.allowedBuckets` (or `defaultBucket`) listing exactly the buckets; a separate bucket or key for uploads; `r2Proxy.networkPolicy.enabled`.
 
-**Not guaranteed.** If a database uses an org-supplied bucket (`backupR2*` org fields) that credential belongs to the org. Anything in the platform bucket outside the proxy's prefixes is protected by the platform credentials, not by per-tenant keys, when `BUILDKIT_S3_VIA_PROXY` is false.
+**Not guaranteed.** If a database uses an org-supplied bucket (`backupR2*` org fields) that credential belongs to the org. Anything in the platform bucket outside the proxy's prefixes is protected by the platform credentials, not by per-tenant keys, when `BUILDKIT_S3_SHARED_KEY=true` hands builds the instance-wide cache key.
 
 **Residual risk.** A flaw in the SigV4 prefix check. Storage-backend scrubbing after namespace deletion depends on the StorageClass (`UNVERIFIED`).
 

@@ -128,7 +128,8 @@ test('default build job is rootless, unprivileged and has no registry credential
   assert.match(flags, /--oci-worker-no-process-sandbox/);
   assert.match(flags, /buildkitd\.rootless\.toml/);
   const script = buildkit.args![0];
-  assert.match(script, /rootlesskit buildkitd/);
+  assert.match(script, /\$BUILDKITD_ENV rootlesskit buildkitd/);
+  assert.ok(script.indexOf('BUILDKITD_ENV=$(mktemp') < script.indexOf('rootlesskit buildkitd'));
   assert.match(script, /ORCHARD_ROOTLESS_UNSUPPORTED/);
   assert.doesNotMatch(script, /\/usr\/bin\/buildctl-daemonless\.sh/);
   assert.equal(spawnSync('/bin/sh', ['-n', '-c', script]).status, 0);

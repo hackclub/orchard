@@ -25,6 +25,12 @@ rootless BuildKit with seccomp and AppArmor turned off. A kernel vulnerability r
 either one gives whoever deployed that code the node. On a single-node install, that includes the
 control plane, the database and every other tenant's secrets.
 
+A rootless build's `RUN` steps can also read the command lines, environment and files of the
+BuildKit processes in their build container. Orchard gives a build no credential that reaches
+beyond its own project: the S3 build cache uses per-project keys through the backup proxy, and the
+instance-wide cache key is refused unless `BUILDKIT_S3_SHARED_KEY=true` marks a single-tenant
+instance.
+
 Turn on both sandboxes before you let anyone deploy code you wouldn't run on the machine yourself.
 [install/README.md](install/README.md) explains how.
 

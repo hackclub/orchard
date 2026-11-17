@@ -126,6 +126,7 @@ kubectl patch deployment backend -n leafycorp-thething-the-thing --type='json' -
 | `BUILDKIT_S3_ENDPOINT` | No | Auto-generated | Custom S3 endpoint (overrides R2_ACCOUNT_ID) |
 | `BUILDKIT_S3_REGION` | No | `auto` | S3 region (use `auto` for R2) |
 | `BUILDKIT_S3_CACHE_PREFIX` | No | `buildkit-cache/` | Prefix for cache objects in bucket |
+| `BUILDKIT_S3_SHARED_KEY` | No | `false` | Without the r2-proxy, the S3 cache stays off unless this is `true`. Every build can read the shared key, so set it only on a single-tenant instance |
 | `BUILDER_NAMESPACE` | No | `orchard-builders` | Kubernetes namespace for builder pods |
 
 *Required if using R2 cache
