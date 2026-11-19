@@ -54,7 +54,7 @@ interface McpTokenClaims {
 }
 
 export const MAX_CLIENT_NAME_LENGTH = 100;
-export const MAX_REDIRECT_URIS = 5;
+export const MAX_REDIRECT_URIS = 10;
 export const MAX_REDIRECT_URI_LENGTH = 512;
 export const MAX_CACHED_CLIENTS = 5000;
 export const CLIENT_TOUCH_INTERVAL_MS = 60 * 60 * 1000;
