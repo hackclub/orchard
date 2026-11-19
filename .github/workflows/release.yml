@@ -341,7 +341,7 @@ jobs:
 
   grafts:
     needs: release-please
-    if: contains(needs.release-please.outputs.paths_released, 'grafts/')
+    if: github.event_name == 'workflow_dispatch' || contains(needs.release-please.outputs.paths_released, 'grafts/')
     runs-on: ubuntu-latest
     permissions:
       contents: read
