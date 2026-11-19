@@ -10,6 +10,7 @@ import { R2ProxyService } from './r2-proxy.service';
 import { BackupUpstreamSyncService } from './backup-upstream-sync.service';
 import { PostgresImageService } from './postgres-image.service';
 import { PublicIpPolicyService } from './public-ip-policy.service';
+import { PodFilesService } from './pod-files.service';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -26,7 +27,8 @@ import { PrismaModule } from '../prisma/prisma.module';
     R2ProxyService,
     BackupUpstreamSyncService,
     PostgresImageService,
-    PublicIpPolicyService
+    PublicIpPolicyService,
+    PodFilesService
   ],
   exports: [
     KubernetesService,

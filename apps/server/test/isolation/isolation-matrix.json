@@ -3199,6 +3199,24 @@
     "bodyIds": [],
     "unseeded": []
   },
+  "GET /pods/:podName/files": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "KubernetesController.listPodFiles",
+    "params": ["podName:pod"],
+    "queryIds": ["namespace"],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "GET /pods/:podName/files/download": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "KubernetesController.downloadPodFile",
+    "params": ["podName:pod"],
+    "queryIds": ["namespace"],
+    "bodyIds": [],
+    "unseeded": []
+  },
   "GET /pods/:podName/logs": {
     "class": "resource-scoped",
     "auth": "authenticated",

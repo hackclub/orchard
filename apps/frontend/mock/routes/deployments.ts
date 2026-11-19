@@ -565,6 +565,24 @@ export function deploymentRoutes(r: Router, { store }: MockContext) {
 	r.get('/deployments', () => store.state.deployments.map((d) => deploymentSummary(store, d)));
 	r.get('/ingresses', () => store.state.deployments.flatMap(ingress));
 	r.get('/deployments/favicon', () => reply(404, { message: 'No favicon in mock mode' }));
+	r.get('/pods/:podName/files', ({ query }: { query: URLSearchParams }) => {
+		const path = (query.get('path') ?? '/').replace(/\/+$/, '') || '/';
+		const tree: Record<string, { name: string; kind: string; size: number | null }[]> = {
+			'/': [
+				{ name: 'app', kind: 'dir', size: null },
+				{ name: 'etc', kind: 'dir', size: null },
+				{ name: 'README.txt', kind: 'file', size: 2048 }
+			],
+			'/etc': [
+				{ name: 'nginx', kind: 'dir', size: null },
+				{ name: 'hostname', kind: 'file', size: 14 }
+			],
+			'/etc/nginx': [{ name: 'nginx.conf', kind: 'file', size: 1280 }],
+			'/app': [{ name: 'index.html', kind: 'file', size: 615 }]
+		};
+		const entries = tree[path];
+		return entries ? { path, entries } : notFound('No directory at ' + path);
+	});
 	r.get(
 		'/deployments/:id',
 		withDep((d) => deploymentDetail(store, d))

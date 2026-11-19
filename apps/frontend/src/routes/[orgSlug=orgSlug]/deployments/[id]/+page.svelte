@@ -71,11 +71,13 @@
 		Braces as TabVariables,
 		History as TabActivity,
 		Eye as TabObserve,
+		FolderOpen as TabFiles,
 		Globe as TabNetwork,
 		Shield as TabSecurity,
 		SlidersHorizontal as TabSettings
 	} from 'lucide-svelte';
 	import SecurityTab from '$lib/components/deployment/SecurityTab.svelte';
+	import FilesTab from '$lib/components/deployment/FilesTab.svelte';
 	import GraftMount from '$lib/grafts/GraftMount.svelte';
 	import GraftCards from '$lib/grafts/GraftCards.svelte';
 	import { graftHost } from '$lib/grafts/host.svelte';
@@ -220,6 +222,7 @@
 		{ id: 'variables', label: 'Variables', icon: TabVariables },
 		{ id: 'deploys', label: 'Activity', icon: TabActivity },
 		{ id: 'observe', label: 'Observe', icon: TabObserve },
+		{ id: 'files', label: 'Files', icon: TabFiles },
 		{ id: 'network', label: 'Network', icon: TabNetwork },
 		{ id: 'security', label: 'Security', icon: TabSecurity },
 		{ id: 'settings', label: 'Settings', icon: TabSettings }
@@ -3345,6 +3348,13 @@
 							{deployment}
 							active={tabs.value === 'observe'}
 							bind:activeTab={observeView}
+						/>
+					{:else if tab.id === 'files'}
+						<FilesTab
+							deploymentId={deployment.id}
+							namespace={deployment.namespace ?? ''}
+							pods={deployment.pods ?? []}
+							active={tabs.value === 'files'}
 						/>
 					{:else if tab.id === 'deploys'}
 						<DeploysTab

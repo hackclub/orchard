@@ -27,6 +27,7 @@
 		rowKey = (_item: T, i: number) => i,
 		rowHref = undefined,
 		onRowClick = undefined,
+		rowActive = undefined,
 		rowLabel = undefined,
 		rowSelected = undefined,
 		onRowContextMenu = undefined,
@@ -47,6 +48,7 @@
 		rowKey?: (item: T, i: number) => unknown;
 		rowHref?: (item: T) => string;
 		onRowClick?: (item: T) => void;
+		rowActive?: (item: T) => boolean;
 		rowLabel?: (item: T) => string;
 		rowSelected?: (item: T) => boolean;
 		onRowContextMenu?: (item: T, event: MouseEvent) => void;
@@ -66,6 +68,7 @@
 	);
 	const hasLabels = $derived(columns.some((c) => c.label));
 	const interactive = $derived(!!rowHref || !!onRowClick);
+	const isActive = (item: T) => interactive && (rowActive?.(item) ?? true);
 
 	function valueOf(item: T, col: TableColumn<T>) {
 		if (col.sortValue) return col.sortValue(item);
@@ -151,7 +154,7 @@
 			{#each sorted as item, i (rowKey(item, i))}
 				<tr
 					class="tr"
-					class:tr--interactive={interactive}
+					class:tr--interactive={isActive(item)}
 					class:tr--selected={rowSelected?.(item) ?? false}
 					aria-selected={rowSelected ? rowSelected(item) : undefined}
 					oncontextmenu={onRowContextMenu ? (e) => onRowContextMenu(item, e) : undefined}
@@ -161,9 +164,9 @@
 					{:else}
 						{#each columns as col, c (col.id)}
 							<td class="td" class:cell--end={col.align === 'end'} class:cell--num={col.numeric}>
-								{#if c === 0 && rowHref}
+								{#if c === 0 && rowHref && isActive(item)}
 									<a class="hit" href={rowHref(item)} aria-label={rowLabel?.(item)}></a>
-								{:else if c === 0 && onRowClick}
+								{:else if c === 0 && onRowClick && isActive(item)}
 									<button
 										type="button"
 										class="hit"

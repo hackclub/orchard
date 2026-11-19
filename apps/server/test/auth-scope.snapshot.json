@@ -31,6 +31,8 @@
   "GET /greenhouse/sandboxes/:id/sessions/:sid/transcript": "exec",
   "GET /greenhouse/sandboxes/:id/ssh": "exec",
   "GET /greenhouse/sandboxes/:id/usage": "read",
+  "GET /pods/:podName/files": "exec",
+  "GET /pods/:podName/files/download": "exec",
   "GET /projects/:id/ingresses/:ingressId/protection": "deploy",
   "GET /sync/:namespace": "deploy",
   "GET /users/me/git-connections/:connectionId/webhook-secret": "deploy",

@@ -590,6 +590,8 @@ export const routes: GeneratedRoute[] = [
   { method: 'DELETE', path: '/pods/:podName', auth: 'authenticated' },
   { method: 'GET', path: '/pods/:podName', auth: 'authenticated' },
   { method: 'POST', path: '/pods/:podName/exec', auth: 'authenticated', requiredScope: 'exec' },
+  { method: 'GET', path: '/pods/:podName/files', auth: 'authenticated', requiredScope: 'exec' },
+  { method: 'GET', path: '/pods/:podName/files/download', auth: 'authenticated', requiredScope: 'exec' },
   { method: 'GET', path: '/pods/:podName/logs', auth: 'authenticated' },
   { method: 'GET', path: '/project-transfers', auth: 'authenticated' },
   { method: 'POST', path: '/project-transfers/:id/accept', auth: 'authenticated' },

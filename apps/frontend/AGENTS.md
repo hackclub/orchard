@@ -240,7 +240,9 @@ Three-level hierarchy: **Org cap** → **Member allowance** → **Deployment req
 
 ## Deployment Page Architecture
 
-- Tabs (`PageTabs`, `?tab=`): Overview, Variables, Activity (`deploys`), Observe, Network, Security, Settings
+- Tabs (`PageTabs`, `?tab=`): Overview, Variables, Activity (`deploys`), Observe, Files, Network, Security, Settings
+  (Files is `FilesTab`: a pod picker, folder breadcrumb and download links for the running pod's file system, reading
+  `GET /apiv1/pods/:podName/files` and streaming `.../files/download`; the mock serves a fixed tree)
   (`SettingsRail`, `?s=`). Old ids (`metrics`, `environment`, `resources`, `volumes`, `build`,
   `advanced`) still resolve.
 - Overview fills exactly one viewport at 64rem wide and 40rem tall or more (`dep-shell--fit`): the

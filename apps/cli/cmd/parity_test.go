@@ -454,6 +454,8 @@ var routeCoverage = map[string]string{
 // call, with the reason. "no CLI command yet" entries are honest gaps: they
 // stay visible here instead of silently rotting.
 var routeExclusions = map[string]string{
+	"GET /pods/:podName/files":          "web Files tab first; CLI command to follow",
+	"GET /pods/:podName/files/download": "web Files tab first; CLI command to follow",
 	// dashboard affordance: returns booleans that drive a dismissible card, and
 	// every underlying setting already has its own CLI command
 	"GET /deployments/:id/next-steps":                  "UI-only checklist card",

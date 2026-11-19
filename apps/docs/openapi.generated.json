@@ -58574,6 +58574,90 @@
         ]
       }
     },
+    "/pods/{podName}/files": {
+      "get": {
+        "description": "Auth: authenticated",
+        "operationId": "pods_files_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "podName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {},
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "GET /pods/:podName/files",
+        "tags": [
+          "pods"
+        ]
+      }
+    },
+    "/pods/{podName}/files/download": {
+      "get": {
+        "description": "Auth: authenticated",
+        "operationId": "pods_files_download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "podName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {},
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "GET /pods/:podName/files/download",
+        "tags": [
+          "pods"
+        ]
+      }
+    },
     "/pods/{podName}/logs": {
       "get": {
         "description": "Auth: authenticated",

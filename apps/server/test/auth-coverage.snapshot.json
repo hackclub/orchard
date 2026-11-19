@@ -346,6 +346,8 @@
   "GET /overview/orgs/:orgSlug/builds": "authenticated",
   "GET /pods": "authenticated",
   "GET /pods/:podName": "authenticated",
+  "GET /pods/:podName/files": "authenticated",
+  "GET /pods/:podName/files/download": "authenticated",
   "GET /pods/:podName/logs": "authenticated",
   "GET /project-transfers": "authenticated",
   "GET /projects": "authenticated",
