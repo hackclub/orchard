@@ -115,6 +115,31 @@ test('registration hands out the secret once and stores only its hash', async ()
   assert.equal(row.clientSecret, hashClientSecret(registration.client_secret));
 });
 
+test('client_secret_basic is advertised, mints a hashed secret, and unsupported auth methods are rejected', async () => {
+  const prisma = memoryPrisma();
+  const svc = new McpOAuthService(sessions as any, prisma as any);
+  assert.ok(
+    svc
+      .getAuthorizationServerMetadata()
+      .token_endpoint_auth_methods_supported.includes('client_secret_basic')
+  );
+  const { registration } = await svc.registerClient({
+    redirect_uris: ['https://client.example/cb'],
+    token_endpoint_auth_method: 'client_secret_basic'
+  });
+  assert.ok(registration.client_secret);
+  assert.equal(registration.token_endpoint_auth_method, 'client_secret_basic');
+  assert.equal(
+    prisma.clients[registration.client_id].clientSecret,
+    hashClientSecret(registration.client_secret)
+  );
+  const bad = await svc.registerClient({
+    redirect_uris: ['https://client.example/cb'],
+    token_endpoint_auth_method: 'private_key_jwt'
+  });
+  assert.equal(bad.error, 'invalid_client_metadata');
+});
+
 test('client_secret_post clients must present their secret at the token endpoint', async () => {
   const prisma = memoryPrisma({
     c1: {

@@ -54,7 +54,7 @@ interface McpTokenClaims {
 }
 
 export const MAX_CLIENT_NAME_LENGTH = 100;
-export const MAX_REDIRECT_URIS = 5;
+export const MAX_REDIRECT_URIS = 10;
 export const MAX_REDIRECT_URI_LENGTH = 512;
 export const MAX_CACHED_CLIENTS = 5000;
 export const CLIENT_TOUCH_INTERVAL_MS = 60 * 60 * 1000;
@@ -64,6 +64,7 @@ const ACCESS_TOKEN_TTL_SECONDS = 24 * 60 * 60;
 // Refresh tokens rotate on every use, so an actively-used client stays
 // authorized indefinitely while an idle one dies after 30 days.
 const REFRESH_TOKEN_TTL = '30d';
+const TOKEN_ENDPOINT_AUTH_METHODS = ['none', 'client_secret_post', 'client_secret_basic'];
 
 @Injectable()
 export class McpOAuthService {
@@ -218,7 +219,7 @@ export class McpOAuthService {
       registration_endpoint: `${this.baseUrl}/register`,
       response_types_supported: ['code'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
-      token_endpoint_auth_methods_supported: ['none', 'client_secret_post'],
+      token_endpoint_auth_methods_supported: TOKEN_ENDPOINT_AUTH_METHODS,
       code_challenge_methods_supported: ['S256'],
       scopes_supported: MCP_SCOPES_SUPPORTED
     };
@@ -285,9 +286,17 @@ export class McpOAuthService {
       }
     }
 
+    const authMethod = body.token_endpoint_auth_method || 'none';
+    if (!TOKEN_ENDPOINT_AUTH_METHODS.includes(authMethod)) {
+      return {
+        error: 'invalid_client_metadata',
+        error_description: 'unsupported token_endpoint_auth_method'
+      };
+    }
+
     const clientId = `mcp_${randomBytes(16).toString('hex')}`;
     const clientSecret =
-      body.token_endpoint_auth_method === 'client_secret_post'
+      authMethod === 'client_secret_post' || authMethod === 'client_secret_basic'
         ? randomBytes(32).toString('hex')
         : undefined;
 
@@ -316,7 +325,7 @@ export class McpOAuthService {
         redirect_uris: redirectUris,
         grant_types: body.grant_types || ['authorization_code'],
         response_types: body.response_types || ['code'],
-        token_endpoint_auth_method: body.token_endpoint_auth_method || 'none'
+        token_endpoint_auth_method: authMethod
       }
     };
   }
