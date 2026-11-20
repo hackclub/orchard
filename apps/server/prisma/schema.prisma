@@ -1497,15 +1497,16 @@ model Ingress {
 }
 
 model ServicePort {
-  id            String  @id @default(uuid()) @db.Uuid
-  serviceId     String  @map("service_id") @db.Uuid
-  name          String? @db.VarChar(63)
-  port          Int
-  targetPort    Int     @map("target_port")
-  protocol      String  @default("TCP") @db.VarChar(10)
-  nodePort      Int?    @map("node_port")
-  publicEnabled Boolean @default(false) @map("public_enabled")
-  publicPort    Int?    @map("public_port")
+  id               String  @id @default(uuid()) @db.Uuid
+  serviceId        String  @map("service_id") @db.Uuid
+  name             String? @db.VarChar(63)
+  port             Int
+  targetPort       Int     @map("target_port")
+  protocol         String  @default("TCP") @db.VarChar(10)
+  nodePort         Int?    @map("node_port")
+  publicEnabled    Boolean @default(false) @map("public_enabled")
+  publicPort       Int?    @map("public_port")
+  preserveClientIp Boolean @default(false) @map("preserve_client_ip")
 
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 

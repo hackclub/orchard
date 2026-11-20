@@ -2044,15 +2044,25 @@ export class DeploymentsController {
     @Param('deploymentId') deploymentId: string,
     @Param('serviceId') serviceId: string,
     @Param('portId') portId: string,
+    @Body() body: { preserveClientIp?: boolean } | undefined,
     @Request() req
   ) {
-    return this.deployments.enableServicePortPublic(deploymentId, serviceId, portId, req.user.sub, {
-      email: req.user.email,
-      username: req.user.username,
-      firstName: req.user.firstName,
-      lastName: req.user.lastName,
-      imageUrl: req.user.imageUrl
-    });
+    const preserveClientIp =
+      typeof body?.preserveClientIp === 'boolean' ? body.preserveClientIp : undefined;
+    return this.deployments.enableServicePortPublic(
+      deploymentId,
+      serviceId,
+      portId,
+      req.user.sub,
+      {
+        email: req.user.email,
+        username: req.user.username,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+        imageUrl: req.user.imageUrl
+      },
+      { preserveClientIp }
+    );
   }
 
   @Delete(':deploymentId/services/:serviceId/ports/:portId/public')

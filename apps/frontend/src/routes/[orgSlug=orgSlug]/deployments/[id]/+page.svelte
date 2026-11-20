@@ -3306,7 +3306,7 @@
 							onSaveServicePorts={(id) => services.savePorts(id)}
 							onDeleteService={(id) => services.delete(id)}
 							onToggleServiceEdit={(svc) => services.toggleEdit(svc)}
-							onTogglePortPublic={(s, p, e) => services.togglePortPublic(s, p, e)}
+							onTogglePortPublic={(s, p, e, k) => services.togglePortPublic(s, p, e, k)}
 							onResetNewServiceForm={() => services.resetNewForm()}
 							onUpdateNewServicePort={(i, c) => services.updateNewPort(i, c)}
 							onUpdateServiceEditPort={(id, i, c) => services.updateEditPort(id, i, c)}

@@ -2151,7 +2151,13 @@ export class K8sWorkloadService {
           const priorPublic = snapshotPublicPortState(
             await this.prisma.servicePort.findMany({
               where: { serviceId: serviceRecord.id },
-              select: { port: true, protocol: true, publicEnabled: true, publicPort: true }
+              select: {
+                port: true,
+                protocol: true,
+                publicEnabled: true,
+                publicPort: true,
+                preserveClientIp: true
+              }
             })
           );
 
@@ -2171,7 +2177,8 @@ export class K8sWorkloadService {
                 nodePort:
                   port.nodePort !== undefined && port.nodePort !== null ? port.nodePort : null,
                 publicEnabled: prior ? prior.publicEnabled : false,
-                publicPort: prior ? prior.publicPort : null
+                publicPort: prior ? prior.publicPort : null,
+                preserveClientIp: prior ? prior.preserveClientIp : false
               };
             })
           });

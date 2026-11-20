@@ -287,13 +287,25 @@ export class ServicesController {
 		}
 	}
 
-	async togglePortPublic(serviceId: string, portId: string, currentlyEnabled: boolean) {
+	async togglePortPublic(
+		serviceId: string,
+		portId: string,
+		currentlyEnabled: boolean,
+		preserveClientIp?: boolean
+	) {
 		this.portPublicBusyId = portId;
 		try {
 			const method = currentlyEnabled ? 'DELETE' : 'POST';
+			const withBody = method === 'POST' && preserveClientIp !== undefined;
 			const response = await apiFetch(
 				`/apiv1/deployments/${this.#deps.deploymentId()}/services/${serviceId}/ports/${portId}/public`,
-				{ method }
+				withBody
+					? {
+							method,
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ preserveClientIp })
+						}
+					: { method }
 			);
 			if (!response.ok) {
 				const data = await response.json().catch(() => ({}));
@@ -302,7 +314,11 @@ export class ServicesController {
 			const res = await response.json();
 			await this.#deps.refetch();
 			toasts.add({
-				title: currentlyEnabled ? 'Port is private' : 'Port is public',
+				title: currentlyEnabled
+					? 'Port is private'
+					: withBody && res?.preserveClientIp
+						? 'Port keeps client addresses'
+						: 'Port is public',
 				description:
 					!currentlyEnabled && res?.host && res?.port
 						? `Address ${res.host}:${res.port}`

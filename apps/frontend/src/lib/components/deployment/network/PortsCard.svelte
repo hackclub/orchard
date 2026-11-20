@@ -23,6 +23,7 @@
 		deletingServiceId,
 		onAdd,
 		onPublic,
+		onPreserveClientIp,
 		onEdit,
 		onRemove
 	}: {
@@ -40,6 +41,7 @@
 		deletingServiceId: string | null;
 		onAdd: () => void;
 		onPublic: (entry: PortEntry, on: boolean) => void;
+		onPreserveClientIp: (entry: PortEntry, on: boolean) => void;
 		onEdit: (entry: PortEntry) => void;
 		onRemove: (entry: PortEntry) => void;
 	} = $props();
@@ -71,6 +73,7 @@
 					{/snippet}
 					{#snippet titleSuffix()}
 						<Badge>{(entry.port.protocol || 'TCP').toUpperCase()}</Badge>
+						{#if open && entry.port.preserveClientIp}<Badge>Client IP</Badge>{/if}
 					{/snippet}
 					{#snippet subtitle()}
 						<span class="addresses">
@@ -111,6 +114,14 @@
 								{#if open && entry.internalUrl}
 									<MenuItem onclick={() => navigator.clipboard.writeText(entry.internalUrl ?? '')}
 										>Copy private address</MenuItem
+									>
+									<MenuSeparator />
+								{/if}
+								{#if open}
+									<MenuItem onclick={() => onPreserveClientIp(entry, !entry.port.preserveClientIp)}
+										>{entry.port.preserveClientIp
+											? 'Stop keeping client addresses'
+											: 'Keep client addresses'}</MenuItem
 									>
 									<MenuSeparator />
 								{/if}

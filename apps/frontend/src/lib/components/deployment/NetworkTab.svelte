@@ -4,6 +4,7 @@
 	import type { Service, ServiceFormState, ServicePortForm } from '$lib/types/deployment';
 	import { Plug } from 'lucide-svelte';
 	import { Alert, Button, Modal, ModalIntro } from '$lib/components/ui';
+	import Checkbox from '$lib/components/ui/Checkbox.svelte';
 	import DomainsCard from './network/DomainsCard.svelte';
 	import PortsCard from './network/PortsCard.svelte';
 	import DomainModal from './network/DomainModal.svelte';
@@ -101,7 +102,12 @@
 		onSaveServicePorts: (serviceId: string) => void;
 		onDeleteService: (serviceId: string) => void;
 		onToggleServiceEdit: (service: Service) => void;
-		onTogglePortPublic: (serviceId: string, portId: string, currentlyEnabled: boolean) => void;
+		onTogglePortPublic: (
+			serviceId: string,
+			portId: string,
+			currentlyEnabled: boolean,
+			preserveClientIp?: boolean
+		) => void;
 		onResetNewServiceForm: () => void;
 		onUpdateNewServicePort: (index: number, changes: Partial<ServicePortForm>) => void;
 		onUpdateServiceEditPort: (
@@ -182,6 +188,7 @@
 	let editingServiceId = $state<string | null>(null);
 	let openPortFor = $state<PortEntry | null>(null);
 	let openPortOpen = $state(false);
+	let openPortPreserveClientIp = $state(false);
 
 	const webPorts = $derived(
 		entries.filter((e) => (e.port.protocol || 'TCP').toUpperCase() !== 'UDP')
@@ -197,6 +204,7 @@
 		if (!entry.port.id) return;
 		if (on) {
 			openPortFor = entry;
+			openPortPreserveClientIp = false;
 			openPortOpen = true;
 		} else {
 			unexposeFor = entry;
@@ -207,7 +215,12 @@
 	function confirmOpenPort() {
 		const entry = openPortFor;
 		openPortOpen = false;
-		if (entry?.port.id) onTogglePortPublic(entry.service.id, entry.port.id, false);
+		if (entry?.port.id)
+			onTogglePortPublic(entry.service.id, entry.port.id, false, openPortPreserveClientIp);
+	}
+
+	function setPreserveClientIp(entry: PortEntry, on: boolean) {
+		if (entry.port.id) onTogglePortPublic(entry.service.id, entry.port.id, false, on);
 	}
 
 	const editForm = $derived(editingServiceId ? serviceEditForms[editingServiceId] : undefined);
@@ -329,6 +342,7 @@
 		deletingServiceId={serviceDeletingId}
 		onAdd={openAddPort}
 		onPublic={setPublic}
+		onPreserveClientIp={setPreserveClientIp}
 		onEdit={openEditPort}
 		onRemove={(entry) => {
 			removePortFor = entry;
@@ -347,6 +361,11 @@
 			title="Make port {openPortFor?.port.targetPort ?? ''} public"
 		/>
 		<Alert tone="warning">Anyone on the internet can reach this port.</Alert>
+		<Checkbox
+			bind:checked={openPortPreserveClientIp}
+			label="Keep client addresses"
+			hint="The app sees each visitor's real IP, which mail servers and IP rate limits need. Only nodes running the app answer on this port."
+		/>
 	</div>
 	{#snippet footer()}
 		<Button variant="ghost" onclick={() => (openPortOpen = false)}>Cancel</Button>

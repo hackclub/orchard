@@ -4359,7 +4359,13 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
 
     const priorPublic = new Map<
       string,
-      { publicEnabled: boolean; publicPort: number | null; targetPort: number; protocol: string }
+      {
+        publicEnabled: boolean;
+        publicPort: number | null;
+        targetPort: number;
+        protocol: string;
+        preserveClientIp: boolean;
+      }
     >();
     if (portsPayload) {
       for (const p of service.ports) {
@@ -4368,7 +4374,8 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
             publicEnabled: true,
             publicPort: p.publicPort,
             targetPort: p.targetPort,
-            protocol: p.protocol
+            protocol: p.protocol,
+            preserveClientIp: p.preserveClientIp
           };
           priorPublic.set(publicKey({ port: p.port, protocol: p.protocol }), entry);
           if (p.name) priorPublic.set(publicKey(p), entry);
@@ -4420,7 +4427,8 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
                 protocol: port.protocol,
                 nodePort: port.nodePort,
                 publicEnabled: prior ? prior.publicEnabled : false,
-                publicPort: prior ? prior.publicPort : null
+                publicPort: prior ? prior.publicPort : null,
+                preserveClientIp: prior ? prior.preserveClientIp : false
               };
             })
           });
@@ -4452,7 +4460,8 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
                     loadBalancerIp: ip,
                     publicPort: prior.publicPort,
                     targetPort: kept.containerPort,
-                    protocol: prior.protocol
+                    protocol: prior.protocol,
+                    preserveClientIp: prior.preserveClientIp
                   });
                 }
               } catch (e: any) {
@@ -4769,7 +4778,8 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
               protocol: port.protocol,
               nodePort: port.nodePort,
               publicEnabled: prior ? prior.publicEnabled : false,
-              publicPort: prior ? prior.publicPort : null
+              publicPort: prior ? prior.publicPort : null,
+              preserveClientIp: prior ? prior.preserveClientIp : false
             };
           })
         });
@@ -5592,7 +5602,8 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     serviceId: string,
     portId: string,
     clerkId: string,
-    userData?: any
+    userData?: any,
+    options: { preserveClientIp?: boolean } = {}
   ) {
     const { user, port, deployment } = await this.access.assertServicePortEditor(
       deploymentId,
@@ -5619,12 +5630,48 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
 
     if (port.publicEnabled && port.publicPort) {
       const host = this.k8sNetwork.publicDeploymentBaseDomain();
-      return { enabled: true, host, ip, port: port.publicPort, protocol: port.protocol };
+      const preserveClientIp = options.preserveClientIp ?? port.preserveClientIp;
+      if (preserveClientIp !== port.preserveClientIp) {
+        await this.k8sNetwork.exposeDeploymentPortPublic({
+          namespace: deployment.namespace,
+          deploymentName: deployment.name,
+          loadBalancerIp: ip,
+          publicPort: port.publicPort,
+          targetPort: port.targetPort,
+          protocol: port.protocol,
+          preserveClientIp
+        });
+        await this.prisma.servicePort.update({
+          where: { id: port.id },
+          data: { preserveClientIp }
+        });
+        void this.audit.log({
+          action: 'service.port.public_updated',
+          actorUserId: user.id,
+          actorEmail: user.email,
+          organizationId: deployment.project.organizationId,
+          projectId: deployment.projectId,
+          deploymentId: deployment.id,
+          targetType: 'service_port',
+          targetId: port.id,
+          targetLabel: `${deployment.name}:${port.targetPort}`,
+          metadata: { publicPort: port.publicPort, protocol: port.protocol, ip, preserveClientIp }
+        });
+      }
+      return {
+        enabled: true,
+        host,
+        ip,
+        port: port.publicPort,
+        protocol: port.protocol,
+        preserveClientIp
+      };
     }
 
     await assertOrgCanExposePublicPort(this.prisma, deployment.project.organizationId);
 
     const publicPort = await this.pickFreePublicDeploymentPort(ip);
+    const preserveClientIp = options.preserveClientIp ?? false;
 
     await this.k8sNetwork.exposeDeploymentPortPublic({
       namespace: deployment.namespace,
@@ -5632,12 +5679,13 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       loadBalancerIp: ip,
       publicPort,
       targetPort: port.targetPort,
-      protocol: port.protocol
+      protocol: port.protocol,
+      preserveClientIp
     });
 
     await this.prisma.servicePort.update({
       where: { id: port.id },
-      data: { publicEnabled: true, publicPort }
+      data: { publicEnabled: true, publicPort, preserveClientIp }
     });
 
     await this.syncPublicDeploymentNetworkPolicy(
@@ -5656,11 +5704,11 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       targetType: 'service_port',
       targetId: port.id,
       targetLabel: `${deployment.name}:${port.targetPort}`,
-      metadata: { publicPort, protocol: port.protocol, ip }
+      metadata: { publicPort, protocol: port.protocol, ip, preserveClientIp }
     });
 
     const host = this.k8sNetwork.publicDeploymentBaseDomain();
-    return { enabled: true, host, ip, port: publicPort, protocol: port.protocol };
+    return { enabled: true, host, ip, port: publicPort, protocol: port.protocol, preserveClientIp };
   }
 
   async disableServicePortPublic(
@@ -5694,7 +5742,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
 
     await this.prisma.servicePort.update({
       where: { id: port.id },
-      data: { publicEnabled: false, publicPort: null }
+      data: { publicEnabled: false, publicPort: null, preserveClientIp: false }
     });
 
     await this.syncPublicDeploymentNetworkPolicy(

@@ -1,0 +1,95 @@
+apiVersion: leaf/v1
+kind: Template
+metadata:
+  name: stalwart
+  displayName: 'Stalwart Mail Server'
+  description: 'A full mail server: SMTP, IMAP, JMAP and spam filtering in one Rust binary. SMTP and IMAP go out on public ports that keep client addresses, so SPF, blocklists and rate limits see the real sender.'
+  icon: https://raw.githubusercontent.com/stalwartlabs/stalwart/main/img/logo-red.svg
+  version: '1.0.0'
+  category: communication
+  tags: ['email', 'smtp', 'imap', 'mail server']
+  keywords:
+    ['mail', 'mailserver', 'jmap', 'caldav', 'carddav', 'webmail', 'postfix', 'dovecot', 'mx']
+  homepage: https://stalw.art
+  license: AGPL-3.0-only
+
+parameters:
+  - name: appName
+    displayName: 'App Name'
+    type: string
+    default: 'stalwart'
+    required: true
+    validation:
+      pattern: '^[a-z][a-z0-9-]{1,58}[a-z0-9]$'
+      message: 'Must be lowercase alphanumeric with hyphens, 3-60 chars'
+  - name: domain
+    displayName: 'Admin domain'
+    description: 'Where the web admin is served. Use a different name from the mail host that your MX record points at.'
+    type: string
+    required: true
+    placeholder: 'mailadmin.example.com'
+  - name: storage
+    displayName: 'Mail storage'
+    description: 'Volume for mailboxes, the search index and settings'
+    type: string
+    default: '10Gi'
+  - name: enableTls
+    displayName: 'Enable HTTPS'
+    type: boolean
+    default: true
+
+resources:
+  - name: server
+    type: deployment
+    config:
+      name: '{{ params.appName }}'
+      resources:
+        cpu: 500m
+        memory: 1Gi
+      image: stalwartlabs/stalwart:v1
+      replicas: 1
+      ports:
+        - name: http
+          containerPort: 8080
+          servicePort: 8080
+          protocol: TCP
+        - name: smtp
+          containerPort: 25
+          servicePort: 25
+          protocol: TCP
+          public: true
+          preserveClientIp: true
+        - name: submissions
+          containerPort: 465
+          servicePort: 465
+          protocol: TCP
+          public: true
+          preserveClientIp: true
+        - name: imaps
+          containerPort: 993
+          servicePort: 993
+          protocol: TCP
+          public: true
+          preserveClientIp: true
+      volumes:
+        - name: etc
+          type: pvc
+          mountPath: /etc/stalwart
+          storageSize: '1Gi'
+        - name: data
+          type: pvc
+          mountPath: /var/lib/stalwart
+          storageSize: '{{ params.storage }}'
+      env:
+        - key: STALWART_PUBLIC_URL
+          value: 'https://{{ params.domain }}'
+
+  - name: ingress
+    type: ingress
+    config:
+      host: '{{ params.domain }}'
+      tlsEnabled: '{{ params.enableTls }}'
+      routes:
+        - path: /
+          serviceName: '{{ resources.server.serviceName }}'
+          servicePort: 8080
