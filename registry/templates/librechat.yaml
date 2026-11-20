@@ -5,7 +5,7 @@ metadata:
   displayName: 'LibreChat'
   description: 'A ChatGPT-style interface for many providers with agents, files and search. Brings its own MongoDB and Meilisearch.'
   icon: message-square
-  version: '1.1.1'
+  version: '1.2.0'
   category: ai
   tags: ['llm', 'chat', 'openai']
   keywords: ['chatgpt', 'open webui', 'ai assistant', 'hack club ai']
@@ -112,7 +112,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: getmeili/meilisearch:v1.13
+      image: getmeili/meilisearch:latest
       replicas: 1
       ports:
         - name: http
@@ -129,6 +129,8 @@ resources:
           value: '{{ params.meiliMasterKey }}'
           secret: true
         - key: MEILI_NO_ANALYTICS
+          value: 'true'
+        - key: MEILI_UPGRADE_DB
           value: 'true'
 
   - name: app

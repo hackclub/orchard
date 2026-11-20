@@ -5,7 +5,7 @@ metadata:
   displayName: 'Karakeep'
   description: 'A bookmark-everything app with AI tagging and full-page archives. Brings its own Meilisearch and headless Chrome.'
   icon: https://github.com/karakeep-app.png?size=256
-  version: '1.1.1'
+  version: '1.2.0'
   category: reader
   tags: ['bookmarks', 'archive', 'ai']
   keywords: ['hoarder', 'pocket', 'raindrop', 'read later', 'ai tagging']
@@ -74,8 +74,8 @@ resources:
       name: '{{ params.appName }}-search'
       resources:
         cpu: 500m
-        memory: 1Gi
-      image: getmeili/meilisearch:v1.13
+        memory: 2Gi
+      image: getmeili/meilisearch:latest
       replicas: 1
       ports:
         - name: http
@@ -93,6 +93,8 @@ resources:
           secret: true
         - key: MEILI_NO_ANALYTICS
           value: 'true'
+        - key: MEILI_UPGRADE_DB
+          value: 'true'
 
   - name: chrome
     type: deployment
@@ -101,8 +103,8 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: zenika/alpine-chrome:124
-      startCommand: 'chromium-browser --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --remote-debugging-address=0.0.0.0 --remote-debugging-port=9222 --hide-scrollbars'
+      image: ghcr.io/karakeep-app/karakeep-chrome:latest
+      startCommand: '--disable-gpu --disable-dev-shm-usage --hide-scrollbars --disable-blink-features=AutomationControlled --window-size=1440,900'
       replicas: 1
       ports:
         - name: cdp
