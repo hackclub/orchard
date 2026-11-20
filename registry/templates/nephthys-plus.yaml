@@ -5,7 +5,7 @@ metadata:
   displayName: Nephthys Plus
   description: Support and ticket manager, for any program
   icon: https://github.com/hackclub.png?size=256
-  version: '1.0.0'
+  version: '1.1.0'
   category: bot
   tags: ['slack', 'bot', 'python', 'support', 'postgres']
   keywords: ['slack', 'bot', 'helpdesk', 'support', 'tickets', 'chat', 'nephthys', 'community']
@@ -60,9 +60,9 @@ parameters:
 
   - name: slackTicketChannel
     displayName: Ticket Channel ID
-    description: Tickets will be posted here
+    description: Tickets will be posted here. Leave empty to post no ticket messages (optional)
     type: string
-    required: true
+    default: ''
     placeholder: 'C...'
 
   - name: slackBtsChannel
@@ -88,9 +88,9 @@ parameters:
 
   - name: program
     displayName: Program
-    description: Points to program transcript
+    description: Name of your program. Use a name that is not a built-in transcript so your channel IDs are used; a built-in name like help uses that program's own channels and text
     type: string
-    default: help
+    default: support
 
   - name: appTitle
     displayName: App Title
