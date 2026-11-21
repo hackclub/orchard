@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { onDestroy, onMount, type Snippet } from 'svelte';
+	import { onDestroy, onMount, untrack, type Snippet } from 'svelte';
 	import { ChevronLeft, ChevronRight, KeyRound, Lock, Mail, Check, Sprout } from 'lucide-svelte';
 	import {
 		Alert,
@@ -117,12 +117,18 @@
 				configLoaded = true;
 				maybeAutoVerify();
 			});
-		if (initialCode && email) {
-			code = initialCode;
+	});
+
+	$effect(() => {
+		const linked = initialCode;
+		if (!linked) return;
+		untrack(() => {
+			if (!email) return;
+			code = linked;
 			go('code');
 			pendingAutoVerify = true;
 			maybeAutoVerify();
-		}
+		});
 	});
 
 	function maybeAutoVerify() {
