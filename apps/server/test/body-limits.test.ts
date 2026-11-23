@@ -9,7 +9,8 @@ import {
   registerBodyParsers,
   PUBLIC_BODY_LIMIT,
   DEFAULT_BODY_LIMIT,
-  LARGE_BODY_LIMIT
+  LARGE_BODY_LIMIT,
+  FILE_EDIT_BODY_LIMIT
 } from '../src/http/body-limits';
 import { assertSafeSamlResponse, SAML_MAX_DEPTH } from '../src/sso/saml-guard';
 
@@ -157,4 +158,36 @@ test('an unauthenticated body to a large-tier route is never parsed', async () =
   const res = await post(app, '/apiv1/projects/import', big, { ...json, cookie: 'junk=1' });
   assert.equal(res.status, 401);
   assert.ok(res.ms < 1000);
+});
+
+test('pod file uploads reach the handler as an untouched stream', async () => {
+  assert.equal(bodyTierFor('/apiv1/pods/web-1/files/upload?path=/a&namespace=n'), 'raw');
+  assert.equal(bodyTierFor('/apiv1/pods/web-1/files/content'), 'fileEdit');
+  assert.equal(bodyTierFor('/apiv1/pods/web-1/files'), 'default');
+  const app = express();
+  registerBodyParsers((type, options) => app.use((express as any)[type](options)));
+  const seen: number[] = [];
+  app.post(/^\/apiv1\/pods\/[^/]+\/files\/upload$/, (req, res) => {
+    let bytes = 0;
+    req.on('data', (chunk: Buffer) => (bytes += chunk.length));
+    req.on('end', () => {
+      seen.push(bytes);
+      res.status(200).end();
+    });
+  });
+  const body = Buffer.from(JSON.stringify({ x: 'a'.repeat(DEFAULT_BODY_LIMIT + 1000) }));
+  for (const headers of [json, { 'content-type': 'application/octet-stream' }, form]) {
+    assert.equal((await post(app, '/apiv1/pods/web-1/files/upload', body, headers)).status, 200);
+  }
+  assert.deepEqual(seen, [body.length, body.length, body.length]);
+});
+
+test('pod file edits get a 3 MiB JSON budget', async () => {
+  const app = buildApp();
+  const url = '/apiv1/pods/web-1/files/content';
+  const fits = Buffer.from(JSON.stringify({ content: '\\u0001'.repeat(400_000) }));
+  assert.ok(fits.length > DEFAULT_BODY_LIMIT && fits.length < FILE_EDIT_BODY_LIMIT);
+  assert.equal((await post(app, url, fits, json)).status, 200);
+  const big = Buffer.from(JSON.stringify({ content: 'a'.repeat(FILE_EDIT_BODY_LIMIT + 10) }));
+  assert.equal((await post(app, url, big, json)).status, 413);
 });

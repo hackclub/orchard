@@ -15,6 +15,8 @@ export interface GeneratedRoute {
 
 export interface RouteAttachment {
   request?: ZodTypeAny;
+  query?: ZodTypeAny;
+  binaryBody?: boolean;
   response?: ZodTypeAny;
   summary?: string;
   scope?: Scope;

@@ -42,7 +42,13 @@ function requestFor(route: Route): RouteConfig['request'] {
   if (params.length > 0) {
     request.params = z.object(Object.fromEntries(params.map((name) => [name, z.string()])));
   }
-  if (bodyMethods.has(route.method)) {
+  if (route.binaryBody) {
+    request.body = {
+      content: {
+        'application/octet-stream': { schema: z.string().openapi({ format: 'binary' }) }
+      }
+    };
+  } else if (bodyMethods.has(route.method) && (route.request || !route.query)) {
     request.body = {
       content: {
         'application/json': { schema: route.request ?? genericObject }
@@ -51,6 +57,7 @@ function requestFor(route: Route): RouteConfig['request'] {
   } else if (route.request instanceof z.ZodObject) {
     request.query = route.request;
   }
+  if (route.query instanceof z.ZodObject) request.query = route.query;
   return request;
 }
 

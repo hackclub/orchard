@@ -4,14 +4,18 @@ export const PUBLIC_BODY_LIMIT = 512 * 1024;
 export const DEFAULT_BODY_LIMIT = 1024 * 1024;
 export const WEBHOOK_BODY_LIMIT = 5 * 1024 * 1024;
 export const LARGE_BODY_LIMIT = 25 * 1024 * 1024;
+export const RAW_BODY_LIMIT = 512 * 1024 * 1024;
+export const FILE_EDIT_BODY_LIMIT = 3 * 1024 * 1024;
 
-export type BodyTier = 'public' | 'default' | 'webhook' | 'large';
+export type BodyTier = 'public' | 'default' | 'webhook' | 'large' | 'raw' | 'fileEdit';
 
 export const BODY_TIER_LIMITS: Record<BodyTier, number> = {
   public: PUBLIC_BODY_LIMIT,
   default: DEFAULT_BODY_LIMIT,
   webhook: WEBHOOK_BODY_LIMIT,
-  large: LARGE_BODY_LIMIT
+  large: LARGE_BODY_LIMIT,
+  raw: RAW_BODY_LIMIT,
+  fileEdit: FILE_EDIT_BODY_LIMIT
 };
 
 const PREFIX = /^\/(?:apiv1|api)(?=\/|$)/;
@@ -53,6 +57,10 @@ const LARGE_ROUTES = [
   /^\/internal\/image-scans\/[^/]+\/result$/
 ];
 
+const RAW_ROUTES = [/^\/pods\/[^/]+\/files\/upload$/];
+
+const FILE_EDIT_ROUTES = [/^\/pods\/[^/]+\/files\/content$/];
+
 function routePath(url: string): string {
   const path = (url.split('?')[0] ?? '').replace(/\/+$/, '') || '/';
   return path.replace(PREFIX, '') || '/';
@@ -60,6 +68,8 @@ function routePath(url: string): string {
 
 export function bodyTierFor(url: string): BodyTier {
   const path = routePath(url);
+  if (RAW_ROUTES.some((re) => re.test(path))) return 'raw';
+  if (FILE_EDIT_ROUTES.some((re) => re.test(path))) return 'fileEdit';
   if (WEBHOOK_ROUTES.some((re) => re.test(path))) return 'webhook';
   if (PUBLIC_ROUTES.some((re) => re.test(path)) || SCIM_ROUTES.some((re) => re.test(path))) {
     return 'public';
@@ -85,7 +95,7 @@ export function registerBodyParsers(
 ): void {
   const tierOf = (req: ParserRequest) => bodyTierFor(req.originalUrl ?? req.url);
   for (const tier of Object.keys(BODY_TIER_LIMITS) as BodyTier[]) {
-    if (tier === 'large') continue;
+    if (tier === 'large' || tier === 'raw') continue;
     const limit = BODY_TIER_LIMITS[tier];
     use('json', {
       limit,

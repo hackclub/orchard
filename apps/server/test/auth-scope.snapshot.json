@@ -9,6 +9,7 @@
   "DELETE /greenhouse/sandboxes/:id/sessions/:sid/agent-chats/:cid": "exec",
   "DELETE /greenhouse/sandboxes/:id/sessions/:sid/chats/:chatId": "exec",
   "DELETE /greenhouse/sandboxes/:id/sessions/:sid/preview-deploy": "deploy",
+  "DELETE /pods/:podName/files": "exec",
   "GET /databases/:id/activity": "deploy",
   "GET /databases/:id/connection": "deploy",
   "GET /greenhouse/me/context": "read",
@@ -32,6 +33,7 @@
   "GET /greenhouse/sandboxes/:id/ssh": "exec",
   "GET /greenhouse/sandboxes/:id/usage": "read",
   "GET /pods/:podName/files": "exec",
+  "GET /pods/:podName/files/content": "exec",
   "GET /pods/:podName/files/download": "exec",
   "GET /projects/:id/ingresses/:ingressId/protection": "deploy",
   "GET /sync/:namespace": "deploy",
@@ -82,8 +84,12 @@
   "POST /greenhouse/ssh-identities": "exec",
   "POST /greenhouse/ssh-identities/import-github": "exec",
   "POST /pods/:podName/exec": "exec",
+  "POST /pods/:podName/files/mkdir": "exec",
+  "POST /pods/:podName/files/move": "exec",
   "PUT /greenhouse/me/context": "exec",
   "PUT /greenhouse/sandboxes/:id/file": "exec",
   "PUT /greenhouse/sandboxes/:id/repos/:name/icon": "deploy",
-  "PUT /greenhouse/sandboxes/credentials": "exec"
+  "PUT /greenhouse/sandboxes/credentials": "exec",
+  "PUT /pods/:podName/files/content": "exec",
+  "PUT /pods/:podName/files/upload": "exec"
 }

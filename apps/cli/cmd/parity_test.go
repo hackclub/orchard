@@ -456,6 +456,12 @@ var routeCoverage = map[string]string{
 var routeExclusions = map[string]string{
 	"GET /pods/:podName/files":          "web Files tab first; CLI command to follow",
 	"GET /pods/:podName/files/download": "web Files tab first; CLI command to follow",
+	"GET /pods/:podName/files/content":  "web Files tab first; CLI command to follow",
+	"PUT /pods/:podName/files/content":  "web Files tab first; CLI command to follow",
+	"PUT /pods/:podName/files/upload":   "web Files tab first; CLI command to follow",
+	"POST /pods/:podName/files/mkdir":   "web Files tab first; CLI command to follow",
+	"POST /pods/:podName/files/move":    "web Files tab first; CLI command to follow",
+	"DELETE /pods/:podName/files":       "web Files tab first; CLI command to follow",
 	// dashboard affordance: returns booleans that drive a dismissible card, and
 	// every underlying setting already has its own CLI command
 	"GET /deployments/:id/next-steps":                  "UI-only checklist card",

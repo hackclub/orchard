@@ -140,14 +140,42 @@ export const podFileEntry = z
   .object({
     name: z.string(),
     kind: z.enum(['file', 'dir', 'symlink', 'other']),
-    size: z.number().int().nullable().describe('Size in bytes, for readable regular files'),
+    size: z
+      .number()
+      .int()
+      .nullable()
+      .describe('Size in bytes for regular files and symlinks to files; null otherwise'),
+    mtime: z.number().int().nullable().describe('Modification time in unix seconds'),
+    mode: z.string().nullable().describe('ls -l style mode, such as drwxr-xr-x'),
+    owner: z.string().nullable().describe('Owner name, or numeric uid'),
+    group: z.string().nullable().describe('Group name, or numeric gid'),
     target: z
       .enum(['file', 'dir'])
       .nullable()
-      .optional()
-      .describe('What a symlink points at; null when it is dangling or neither')
+      .describe('What a symlink points at; null when it is dangling, neither, or not a symlink'),
+    linkTo: z.string().nullable().describe('The symlink text, for symlinks')
   })
   .passthrough();
+
+export const podMount = z
+  .object({
+    path: z.string(),
+    volume: z.string(),
+    type: z.enum(['persistent', 'temporary', 'config', 'secret', 'other']),
+    readOnly: z.boolean(),
+    claim: z.string().nullable().describe('PersistentVolumeClaim name, for persistent mounts')
+  })
+  .passthrough();
+
+const writtenPodFile = z
+  .object({
+    path: z.string(),
+    size: z.number().int().nullable(),
+    mtime: z.number().int().nullable()
+  })
+  .passthrough();
+
+const podPathResult = z.object({ path: z.string() }).passthrough();
 
 export const attachments: Record<`${string} /${string}`, RouteAttachment> = {
   'GET /events/orgs/:orgId': {
@@ -164,20 +192,97 @@ export const attachments: Record<`${string} /${string}`, RouteAttachment> = {
     response: orgEventStreamMessage
   },
   'GET /pods/:podName/files': {
-    summary: 'List a directory inside a running pod',
+    summary: 'List a directory inside a running pod, with its mounts',
     scope: 'exec',
     request: podFileQuery('Absolute directory path (default /)'),
     response: z
       .object({
         path: z.string().describe('The normalized directory that was listed'),
-        entries: z.array(podFileEntry)
+        writable: z.boolean().describe('Whether the directory accepts new files'),
+        truncated: z
+          .boolean()
+          .describe('True when the folder held more than 10,000 entries or 2 MiB of listing'),
+        entries: z.array(podFileEntry),
+        mounts: z.array(podMount)
       })
       .passthrough()
   },
-  'GET /pods/:podName/files/download': {
-    summary: 'Download a file from a running pod as application/octet-stream',
+  'GET /pods/:podName/files/content': {
+    summary: 'Read up to 1 MiB of a file inside a running pod as text',
     scope: 'exec',
-    request: podFileQuery('Absolute path of a readable regular file')
+    request: podFileQuery('Absolute path of a readable regular file'),
+    response: z
+      .object({
+        path: z.string(),
+        size: z.number().int().nullable(),
+        mtime: z.number().int().nullable(),
+        binary: z.boolean().describe('True when the file holds NUL bytes or is not UTF-8'),
+        truncated: z.boolean().describe('True when the file is longer than 1 MiB'),
+        content: z.string().nullable().describe('The text, or null for binary files')
+      })
+      .passthrough()
+  },
+  'PUT /pods/:podName/files/content': {
+    summary:
+      'Replace a text file inside a running pod (query: namespace, path, container), keeping its mode and owner',
+    scope: 'exec',
+    query: podFileQuery('Absolute path of the file to write'),
+    request: z
+      .object({
+        content: z.string().describe('New UTF-8 content, at most 1 MiB'),
+        expectedMtime: z
+          .number()
+          .int()
+          .nullable()
+          .optional()
+          .describe('mtime the file had when it was opened; a mismatch answers 409 modified')
+      })
+      .passthrough(),
+    response: writtenPodFile
+  },
+  'GET /pods/:podName/files/download': {
+    summary:
+      'Download a file from a running pod, or a folder as .tar.gz; inline=1 shows raster images inline',
+    scope: 'exec',
+    request: podFileQuery('Absolute path of a readable file or folder').extend({
+      inline: z
+        .enum(['0', '1'])
+        .optional()
+        .describe('1 to display a png, jpeg, gif, webp, avif, bmp or ico image inline')
+    })
+  },
+  'PUT /pods/:podName/files/upload': {
+    summary:
+      'Upload a file into a running pod; the raw request body is the file (Content-Length required, at most 512 MiB)',
+    scope: 'exec',
+    binaryBody: true,
+    query: podFileQuery('Absolute path of the file to create').extend({
+      overwrite: z
+        .enum(['0', '1'])
+        .optional()
+        .describe('1 to replace an existing file; otherwise an existing file answers 409 exists')
+    }),
+    response: writtenPodFile
+  },
+  'POST /pods/:podName/files/mkdir': {
+    summary: 'Create a folder, and any missing parents, inside a running pod',
+    scope: 'exec',
+    query: podFileQuery('Absolute path of the folder to create'),
+    response: podPathResult
+  },
+  'POST /pods/:podName/files/move': {
+    summary: 'Rename or move a file or folder inside a running pod',
+    scope: 'exec',
+    query: podFileQuery('Absolute path to move').extend({
+      to: z.string().describe('Absolute destination path; must not exist yet')
+    }),
+    response: podPathResult
+  },
+  'DELETE /pods/:podName/files': {
+    summary: 'Delete a file, or a folder and everything in it, inside a running pod',
+    scope: 'exec',
+    query: podFileQuery('Absolute path to delete'),
+    response: z.object({ path: z.string(), kind: z.enum(['file', 'dir']) }).passthrough()
   },
   'POST /pods/:podName/exec': {
     summary: 'Run a one-shot command in a pod (synchronous, non-streaming)',

@@ -631,6 +631,15 @@
     "bodyIds": [],
     "unseeded": []
   },
+  "DELETE /pods/:podName/files": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "KubernetesController.deletePodFile",
+    "params": ["podName:pod"],
+    "queryIds": ["namespace"],
+    "bodyIds": [],
+    "unseeded": []
+  },
   "DELETE /projects/:id": {
     "class": "resource-scoped",
     "auth": "authenticated",
@@ -3203,6 +3212,15 @@
     "class": "resource-scoped",
     "auth": "authenticated",
     "handler": "KubernetesController.listPodFiles",
+    "params": ["podName:pod"],
+    "queryIds": ["namespace"],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "GET /pods/:podName/files/content": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "KubernetesController.readPodFile",
     "params": ["podName:pod"],
     "queryIds": ["namespace"],
     "bodyIds": [],
@@ -6025,6 +6043,24 @@
     "bodyIds": ["namespace"],
     "unseeded": []
   },
+  "POST /pods/:podName/files/mkdir": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "KubernetesController.makePodDirectory",
+    "params": ["podName:pod"],
+    "queryIds": ["namespace"],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "POST /pods/:podName/files/move": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "KubernetesController.movePodFile",
+    "params": ["podName:pod"],
+    "queryIds": ["namespace"],
+    "bodyIds": [],
+    "unseeded": []
+  },
   "POST /project-transfers/:id/accept": {
     "class": "resource-scoped",
     "auth": "authenticated",
@@ -6649,6 +6685,24 @@
     "handler": "OrganizationRegistryCredentialsController.upsert",
     "params": ["organizationId:org"],
     "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "PUT /pods/:podName/files/content": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "KubernetesController.writePodFile",
+    "params": ["podName:pod"],
+    "queryIds": ["namespace"],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "PUT /pods/:podName/files/upload": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "KubernetesController.uploadPodFile",
+    "params": ["podName:pod"],
+    "queryIds": ["namespace"],
     "bodyIds": [],
     "unseeded": []
   },

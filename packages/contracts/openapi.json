@@ -58678,6 +58678,91 @@
       }
     },
     "/pods/{podName}/files": {
+      "delete": {
+        "description": "Auth: authenticated (scope: exec)",
+        "operationId": "pods_files_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "podName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Pod namespace",
+            "in": "query",
+            "name": "namespace",
+            "required": true,
+            "schema": {
+              "description": "Pod namespace",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Absolute path to delete",
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "description": "Absolute path to delete",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Container name (defaults to the first container in the pod spec)",
+            "in": "query",
+            "name": "container",
+            "required": false,
+            "schema": {
+              "description": "Container name (defaults to the first container in the pod spec)",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "file",
+                        "dir"
+                      ],
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "kind"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Delete a file, or a folder and everything in it, inside a running pod",
+        "tags": [
+          "pods"
+        ]
+      },
       "get": {
         "description": "Auth: authenticated (scope: exec)",
         "operationId": "pods_files_list",
@@ -58732,6 +58817,13 @@
                       "items": {
                         "additionalProperties": {},
                         "properties": {
+                          "group": {
+                            "description": "Group name, or numeric gid",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "kind": {
                             "enum": [
                               "file",
@@ -58741,18 +58833,46 @@
                             ],
                             "type": "string"
                           },
+                          "linkTo": {
+                            "description": "The symlink text, for symlinks",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "mode": {
+                            "description": "ls -l style mode, such as drwxr-xr-x",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "mtime": {
+                            "description": "Modification time in unix seconds",
+                            "type": [
+                              "integer",
+                              "null"
+                            ]
+                          },
                           "name": {
                             "type": "string"
                           },
+                          "owner": {
+                            "description": "Owner name, or numeric uid",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "size": {
-                            "description": "Size in bytes, for readable regular files",
+                            "description": "Size in bytes for regular files and symlinks to files; null otherwise",
                             "type": [
                               "integer",
                               "null"
                             ]
                           },
                           "target": {
-                            "description": "What a symlink points at; null when it is dangling or neither",
+                            "description": "What a symlink points at; null when it is dangling, neither, or not a symlink",
                             "enum": [
                               "file",
                               "dir",
@@ -58767,7 +58887,55 @@
                         "required": [
                           "name",
                           "kind",
-                          "size"
+                          "size",
+                          "mtime",
+                          "mode",
+                          "owner",
+                          "group",
+                          "target",
+                          "linkTo"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "mounts": {
+                      "items": {
+                        "additionalProperties": {},
+                        "properties": {
+                          "claim": {
+                            "description": "PersistentVolumeClaim name, for persistent mounts",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "readOnly": {
+                            "type": "boolean"
+                          },
+                          "type": {
+                            "enum": [
+                              "persistent",
+                              "temporary",
+                              "config",
+                              "secret",
+                              "other"
+                            ],
+                            "type": "string"
+                          },
+                          "volume": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "volume",
+                          "type",
+                          "readOnly",
+                          "claim"
                         ],
                         "type": "object"
                       },
@@ -58776,11 +58944,22 @@
                     "path": {
                       "description": "The normalized directory that was listed",
                       "type": "string"
+                    },
+                    "truncated": {
+                      "description": "True when the folder held more than 10,000 entries or 2 MiB of listing",
+                      "type": "boolean"
+                    },
+                    "writable": {
+                      "description": "Whether the directory accepts new files",
+                      "type": "boolean"
                     }
                   },
                   "required": [
                     "path",
-                    "entries"
+                    "writable",
+                    "truncated",
+                    "entries",
+                    "mounts"
                   ],
                   "type": "object"
                 }
@@ -58797,16 +58976,16 @@
             "cookieAuth": []
           }
         ],
-        "summary": "List a directory inside a running pod",
+        "summary": "List a directory inside a running pod, with its mounts",
         "tags": [
           "pods"
         ]
       }
     },
-    "/pods/{podName}/files/download": {
+    "/pods/{podName}/files/content": {
       "get": {
         "description": "Auth: authenticated (scope: exec)",
-        "operationId": "pods_files_download_get",
+        "operationId": "pods_files_content_get",
         "parameters": [
           {
             "in": "path",
@@ -58853,6 +59032,248 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": {},
+                  "properties": {
+                    "binary": {
+                      "description": "True when the file holds NUL bytes or is not UTF-8",
+                      "type": "boolean"
+                    },
+                    "content": {
+                      "description": "The text, or null for binary files",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "mtime": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "truncated": {
+                      "description": "True when the file is longer than 1 MiB",
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "size",
+                    "mtime",
+                    "binary",
+                    "truncated",
+                    "content"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Read up to 1 MiB of a file inside a running pod as text",
+        "tags": [
+          "pods"
+        ]
+      },
+      "put": {
+        "description": "Auth: authenticated (scope: exec)",
+        "operationId": "pods_files_content_set",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "podName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Pod namespace",
+            "in": "query",
+            "name": "namespace",
+            "required": true,
+            "schema": {
+              "description": "Pod namespace",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Absolute path of the file to write",
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "description": "Absolute path of the file to write",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Container name (defaults to the first container in the pod spec)",
+            "in": "query",
+            "name": "container",
+            "required": false,
+            "schema": {
+              "description": "Container name (defaults to the first container in the pod spec)",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {},
+                "properties": {
+                  "content": {
+                    "description": "New UTF-8 content, at most 1 MiB",
+                    "type": "string"
+                  },
+                  "expectedMtime": {
+                    "description": "mtime the file had when it was opened; a mismatch answers 409 modified",
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "content"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {
+                    "mtime": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "size",
+                    "mtime"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Replace a text file inside a running pod (query: namespace, path, container), keeping its mode and owner",
+        "tags": [
+          "pods"
+        ]
+      }
+    },
+    "/pods/{podName}/files/download": {
+      "get": {
+        "description": "Auth: authenticated (scope: exec)",
+        "operationId": "pods_files_download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "podName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Pod namespace",
+            "in": "query",
+            "name": "namespace",
+            "required": true,
+            "schema": {
+              "description": "Pod namespace",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Absolute path of a readable file or folder",
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "description": "Absolute path of a readable file or folder",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Container name (defaults to the first container in the pod spec)",
+            "in": "query",
+            "name": "container",
+            "required": false,
+            "schema": {
+              "description": "Container name (defaults to the first container in the pod spec)",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1 to display a png, jpeg, gif, webp, avif, bmp or ico image inline",
+            "in": "query",
+            "name": "inline",
+            "required": false,
+            "schema": {
+              "description": "1 to display a png, jpeg, gif, webp, avif, bmp or ico image inline",
+              "enum": [
+                "0",
+                "1"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
                   "properties": {},
                   "type": "object"
                 }
@@ -58869,7 +59290,292 @@
             "cookieAuth": []
           }
         ],
-        "summary": "Download a file from a running pod as application/octet-stream",
+        "summary": "Download a file from a running pod, or a folder as .tar.gz; inline=1 shows raster images inline",
+        "tags": [
+          "pods"
+        ]
+      }
+    },
+    "/pods/{podName}/files/mkdir": {
+      "post": {
+        "description": "Auth: authenticated (scope: exec)",
+        "operationId": "pods_files_mkdir",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "podName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Pod namespace",
+            "in": "query",
+            "name": "namespace",
+            "required": true,
+            "schema": {
+              "description": "Pod namespace",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Absolute path of the folder to create",
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "description": "Absolute path of the folder to create",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Container name (defaults to the first container in the pod spec)",
+            "in": "query",
+            "name": "container",
+            "required": false,
+            "schema": {
+              "description": "Container name (defaults to the first container in the pod spec)",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Create a folder, and any missing parents, inside a running pod",
+        "tags": [
+          "pods"
+        ]
+      }
+    },
+    "/pods/{podName}/files/move": {
+      "post": {
+        "description": "Auth: authenticated (scope: exec)",
+        "operationId": "pods_files_move",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "podName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Pod namespace",
+            "in": "query",
+            "name": "namespace",
+            "required": true,
+            "schema": {
+              "description": "Pod namespace",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Absolute path to move",
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "description": "Absolute path to move",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Container name (defaults to the first container in the pod spec)",
+            "in": "query",
+            "name": "container",
+            "required": false,
+            "schema": {
+              "description": "Container name (defaults to the first container in the pod spec)",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Absolute destination path; must not exist yet",
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "Absolute destination path; must not exist yet",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Rename or move a file or folder inside a running pod",
+        "tags": [
+          "pods"
+        ]
+      }
+    },
+    "/pods/{podName}/files/upload": {
+      "put": {
+        "description": "Auth: authenticated (scope: exec)",
+        "operationId": "pods_files_upload_set",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "podName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Pod namespace",
+            "in": "query",
+            "name": "namespace",
+            "required": true,
+            "schema": {
+              "description": "Pod namespace",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Absolute path of the file to create",
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "description": "Absolute path of the file to create",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Container name (defaults to the first container in the pod spec)",
+            "in": "query",
+            "name": "container",
+            "required": false,
+            "schema": {
+              "description": "Container name (defaults to the first container in the pod spec)",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1 to replace an existing file; otherwise an existing file answers 409 exists",
+            "in": "query",
+            "name": "overwrite",
+            "required": false,
+            "schema": {
+              "description": "1 to replace an existing file; otherwise an existing file answers 409 exists",
+              "enum": [
+                "0",
+                "1"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {
+                    "mtime": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "size",
+                    "mtime"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Upload a file into a running pod; the raw request body is the file (Content-Length required, at most 512 MiB)",
         "tags": [
           "pods"
         ]

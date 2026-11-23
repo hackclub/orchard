@@ -9,7 +9,13 @@ export const SENSITIVE_OPERATIONS = new Set<string>([
   'POST /auth/tokens',
   'POST /organizations/:id/scim/tokens',
   'POST /pods/:podName/exec',
-  'GET /pods/:podName/files/download'
+  'GET /pods/:podName/files/download',
+  'GET /pods/:podName/files/content',
+  'PUT /pods/:podName/files/content',
+  'PUT /pods/:podName/files/upload',
+  'POST /pods/:podName/files/mkdir',
+  'POST /pods/:podName/files/move',
+  'DELETE /pods/:podName/files'
 ]);
 
 export const DESTRUCTIVE_OPERATIONS = new Set<string>([
@@ -28,7 +34,10 @@ export const DESTRUCTIVE_OPERATIONS = new Set<string>([
   'POST /database-operations/:opId/undo',
   'POST /databases/:id/rotate-password',
   'POST /projects/:id/transfer-org',
-  'POST /deployments/:id/cancel'
+  'POST /deployments/:id/cancel',
+  'POST /pods/:podName/files/move',
+  'PUT /pods/:podName/files/upload',
+  'PUT /pods/:podName/files/content'
 ]);
 
 export const AGENT_HIDDEN_PREFIXES = [
