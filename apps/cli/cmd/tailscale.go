@@ -52,6 +52,9 @@ func tailscaleStatusCmd() *cobra.Command {
 			if v := pick(raw, "tailnet"); v != "" {
 				pairs = append(pairs, [2]string{"tailnet", v})
 			}
+			if v := pick(raw, "loginServer"); v != "" {
+				pairs = append(pairs, [2]string{"login server", v})
+			}
 			output.KV(pairs)
 			return nil
 		},
@@ -59,17 +62,24 @@ func tailscaleStatusCmd() *cobra.Command {
 }
 
 func tailscaleLinkCmd() *cobra.Command {
-	var authKey string
+	var authKey, loginServer string
 	c := &cobra.Command{
 		Use:   "link",
 		Short: "Link your Tailscale account with an auth key",
 		Long: "Link Orchard to your tailnet with a Tailscale auth key.\n\n" +
 			"Create one under Tailscale Admin → Settings → Keys: make it Reusable and\n" +
 			"Ephemeral, leave Tags empty. The key is sensitive; pass it with --auth-key,\n" +
-			"set ORCHARD_TS_AUTHKEY, or let the command prompt for it on stdin.",
+			"set ORCHARD_TS_AUTHKEY, or let the command prompt for it on stdin.\n\n" +
+			"To use a self-hosted control server such as Headscale, pass its URL with\n" +
+			"--login-server or set ORCHARD_TS_LOGIN_SERVER, and use a pre-auth key from\n" +
+			"that server.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			key, err := tailscaleAuthKey(cmd, authKey)
+			server := strings.TrimSpace(loginServer)
+			if server == "" {
+				server = strings.TrimSpace(os.Getenv("ORCHARD_TS_LOGIN_SERVER"))
+			}
+			key, err := tailscaleAuthKey(cmd, authKey, server != "")
 			if err != nil {
 				return err
 			}
@@ -77,8 +87,12 @@ func tailscaleLinkCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			body := map[string]any{"apiKey": key}
+			if server != "" {
+				body["loginServer"] = server
+			}
 			var raw map[string]any
-			if err := cl.Send(cmd.Context(), http.MethodPost, "/tailscale/link", map[string]any{"apiKey": key}, &raw); err != nil {
+			if err := cl.Send(cmd.Context(), http.MethodPost, "/tailscale/link", body, &raw); err != nil {
 				return err
 			}
 			output.Successf("linked Tailscale account")
@@ -89,19 +103,24 @@ func tailscaleLinkCmd() *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&authKey, "auth-key", "", "Tailscale auth key (tskey-auth-…); falls back to ORCHARD_TS_AUTHKEY or a stdin prompt")
+	c.Flags().StringVar(&loginServer, "login-server", "", "URL of a self-hosted control server such as Headscale; falls back to ORCHARD_TS_LOGIN_SERVER")
 	return c
 }
 
 // tailscaleAuthKey resolves the sensitive auth key: --auth-key flag, then the
 // ORCHARD_TS_AUTHKEY env var, then stdin (prompting only when interactive).
-func tailscaleAuthKey(cmd *cobra.Command, flag string) (string, error) {
+func tailscaleAuthKey(cmd *cobra.Command, flag string, selfHosted bool) (string, error) {
 	key := strings.TrimSpace(flag)
 	if key == "" {
 		key = strings.TrimSpace(os.Getenv("ORCHARD_TS_AUTHKEY"))
 	}
 	if key == "" {
 		if term.IsTerminal(int(os.Stdin.Fd())) {
-			output.Fprint(os.Stderr, "Paste your Tailscale auth key (tskey-auth-…): ")
+			prompt := "Paste your Tailscale auth key (tskey-auth-…): "
+			if selfHosted {
+				prompt = "Paste a pre-auth key from your control server: "
+			}
+			output.Fprint(os.Stderr, prompt)
 		}
 		r := bufio.NewReader(cmd.InOrStdin())
 		line, _ := r.ReadString('\n')
@@ -110,7 +129,7 @@ func tailscaleAuthKey(cmd *cobra.Command, flag string) (string, error) {
 	if key == "" {
 		return "", errors.New("no auth key: pass --auth-key, set ORCHARD_TS_AUTHKEY, or pipe the key on stdin")
 	}
-	if !strings.HasPrefix(key, "tskey-") {
+	if !selfHosted && !strings.HasPrefix(key, "tskey-") {
 		output.Warnf("auth key doesn't start with tskey- (continuing anyway)")
 	}
 	return key, nil
