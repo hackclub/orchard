@@ -328,6 +328,8 @@ const AUDIT_CATEGORIES: [string, string][] = [
 	['deployment.build', 'Build'],
 	['deployment.autodeploy', 'Build'],
 	['deployment.github_repo', 'Source'],
+	['deployment.pod.file', 'Files'],
+	['deployment.pod.exec', 'Terminal'],
 	['deployment.webhook', 'Webhook'],
 	['webhook_token', 'Webhook'],
 	['ingress', 'Domain'],

@@ -92,6 +92,13 @@
 		{
 			need: 'Code and config',
 			use: ['CodeBlock', 'Snippet', 'EnvVarRow', 'LogViewer'],
+			note: 'syntax colours a known language',
+			section: 'data'
+		},
+		{
+			need: 'Edit a file',
+			use: ['CodeEditor'],
+			note: 'same colours as CodeBlock',
 			section: 'data'
 		},
 		{ need: 'Keys and IDs', use: ['Kbd', 'CopyButton', 'MiddleTruncate'], section: 'small' },

@@ -241,8 +241,15 @@ Three-level hierarchy: **Org cap** → **Member allowance** → **Deployment req
 ## Deployment Page Architecture
 
 - Tabs (`PageTabs`, `?tab=`): Overview, Variables, Activity (`deploys`), Observe, Files, Network, Security, Settings
-  (Files is `FilesTab`: a pod picker, folder breadcrumb and download links for the running pod's file system, reading
-  `GET /apiv1/pods/:podName/files` and streaming `.../files/download`; the mock serves a fixed tree)
+  (Files is `FilesTab` + `deployment/files/`: a file explorer for the running pod. The folder and the open file live in
+  the URL (`path`, `file`), so browser back and forward walk folders. The listing is the kit `Table`, virtualized, with
+  a row `Menu`; a text file opens in `FilePreview` (side panel when the card is wide, `Sheet` when narrow) with
+  `CodeBlock syntax` and edits in `CodeEditor`, saving with `expectedMtime` so a 409 `modified` asks to load theirs
+  or overwrite. Uploads go through `apiUpload` (XHR for progress) in `UploadQueue`, three at a time, and a 409
+  `exists` asks to replace. The line under the toolbar says where a change lands, from the folder's mount
+  (`folderStorage` in `$lib/utils/pod-files.ts`, tested). The mock in `mock/routes/pod-files.ts` is a small
+  in-memory filesystem; `game-server` and other image-only apps answer `no_shell`, `mailer` has no `tar`, uploads
+  are throttled to 3 MB/s, and `POST /apiv1/__mock/pod-files/touch?path=` bumps a file's mtime to test conflicts)
   (`SettingsRail`, `?s=`). Old ids (`metrics`, `environment`, `resources`, `volumes`, `build`,
   `advanced`) still resolve.
 - Overview fills exactly one viewport at 64rem wide and 40rem tall or more (`dep-shell--fit`): the

@@ -6,6 +6,7 @@ import { adminSystemRoutes } from './admin-system.ts';
 import { databaseRoutes } from './databases.ts';
 import { deploymentRoutes } from './deployments.ts';
 import { gitRoutes } from './git.ts';
+import { podFileRoutes } from './pod-files.ts';
 import { jobRoutes } from './jobs.ts';
 import { projectRoutes } from './projects.ts';
 import { recoveryRoutes } from './recovery.ts';
@@ -19,6 +20,7 @@ export function registerRoutes(router: Router, ctx: MockContext) {
 	shellRoutes(router, ctx);
 	adminOrgRoutes(router, ctx);
 	deploymentRoutes(router, ctx);
+	podFileRoutes(router, ctx);
 	projectRoutes(router, ctx);
 	databaseRoutes(router, ctx);
 	recoveryRoutes(router, ctx);

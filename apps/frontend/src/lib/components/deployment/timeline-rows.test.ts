@@ -164,6 +164,8 @@ test('the synthetic building row yields to a real build entry when the feed alre
 test('a change row is badged by what it touched, not a generic word', () => {
 	assert.equal(auditCategory('deployment.env.updated'), 'Env');
 	assert.equal(auditCategory('deployment.scaled'), 'App');
+	assert.equal(auditCategory('deployment.pod.file.upload'), 'Files');
+	assert.equal(auditCategory('deployment.pod.exec.command'), 'Terminal');
 	assert.equal(auditCategory('ingress.created'), 'Domain');
 	assert.equal(auditCategory('webhook_token.created'), 'Webhook');
 	assert.equal(auditCategory('org.member.added'), 'Change');

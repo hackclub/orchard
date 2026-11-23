@@ -270,6 +270,17 @@
 	--console-hover: color-mix(in srgb, var(--ink) 7%, transparent);
 	--console-quiet: color-mix(in srgb, var(--ink) 4%, transparent);
 	--console-strong: var(--ink);
+
+	--syntax-mix: 62%;
+	--syntax-keyword: color-mix(in oklab, var(--hue-violet) var(--syntax-mix), var(--console-text));
+	--syntax-string: color-mix(in oklab, var(--hue-green) var(--syntax-mix), var(--console-text));
+	--syntax-number: color-mix(in oklab, var(--hue-amber) var(--syntax-mix), var(--console-text));
+	--syntax-literal: color-mix(in oklab, var(--hue-pink) var(--syntax-mix), var(--console-text));
+	--syntax-key: color-mix(in oklab, var(--hue-blue) var(--syntax-mix), var(--console-text));
+	--syntax-tag: color-mix(in oklab, var(--hue-blue) var(--syntax-mix), var(--console-text));
+	--syntax-heading: var(--console-text);
+	--syntax-comment: var(--console-faint);
+	--syntax-punct: var(--console-dim);
 }
 
 html.contrast-high {
@@ -358,6 +369,7 @@ html.reduce-transparency *::after {
 	--hue-amber: #fbbf24;
 
 	--console-bg: color-mix(in srgb, var(--bg-surface) 93%, var(--ink));
+	--syntax-mix: 78%;
 }
 
 @theme {

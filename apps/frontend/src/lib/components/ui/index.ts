@@ -126,5 +126,6 @@ export { default as RadioGroup } from './RadioGroup.svelte';
 export { default as Tooltip } from './Tooltip.svelte';
 export { default as CopyButton } from './CopyButton.svelte';
 export { default as CodeBlock } from './CodeBlock.svelte';
+export { default as CodeEditor } from './CodeEditor.svelte';
 export { default as Kbd } from './Kbd.svelte';
 export { default as SwatchPicker } from './SwatchPicker.svelte';

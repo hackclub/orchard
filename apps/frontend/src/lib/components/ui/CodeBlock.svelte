@@ -1,5 +1,6 @@
 <script lang="ts">
 	import CopyButton from './CopyButton.svelte';
+	import { tokenize, type SyntaxLanguage } from '$lib/utils/syntax';
 
 	let {
 		code,
@@ -9,6 +10,8 @@
 		highlight = [],
 		wrap = false,
 		maxHeight = undefined,
+		syntax = null,
+		fill = false,
 		class: className = ''
 	}: {
 		code: string;
@@ -18,16 +21,23 @@
 		highlight?: number[];
 		wrap?: boolean;
 		maxHeight?: string;
+		syntax?: SyntaxLanguage | null;
+		fill?: boolean;
 		class?: string;
 	} = $props();
 
-	const lines = $derived(code.replace(/\n$/, '').split('\n'));
+	const lines = $derived(tokenize(code, syntax));
 	const marked = $derived(new Set(highlight));
 	const gutter = $derived(String(lines.length).length);
 	const heading = $derived(title ?? language);
 </script>
 
-<figure class="code {className}" class:code--wrap={wrap} class:code--headless={!heading}>
+<figure
+	class="code {className}"
+	class:code--fill={fill}
+	class:code--wrap={wrap}
+	class:code--headless={!heading}
+>
 	{#if heading}
 		<figcaption class="bar">
 			<span class="name" class:name--mono={!!title}>{heading}</span>
@@ -41,7 +51,10 @@
 		<pre class="pre" style:--gutter="{gutter}ch"><code class="lines"
 				>{#each lines as line, i (i)}<span class="line" class:line--marked={marked.has(i + 1)}
 						>{#if lineNumbers}<span class="no" aria-hidden="true">{i + 1}</span>{/if}<span
-							class="src">{line || ' '}</span
+							class="src"
+							>{#each line as token, t (t)}{#if token.kind}<span class="tk tk--{token.kind}"
+										>{token.text}</span
+									>{:else}{token.text}{/if}{:else}{' '}{/each}</span
 						></span
 					>{/each}</code
 			></pre>
@@ -58,6 +71,16 @@
 		background: var(--console-bg);
 		box-shadow: inset 0 0 0 1px var(--console-edge);
 		overflow: clip;
+	}
+	.code--fill {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+	.code--fill .scroll {
+		flex: 1;
+		min-height: 0;
 	}
 	.bar {
 		display: flex;
@@ -139,6 +162,35 @@
 	.line {
 		display: flex;
 		padding: 0 1rem 0 0.875rem;
+	}
+	.tk--keyword {
+		color: var(--syntax-keyword);
+	}
+	.tk--string {
+		color: var(--syntax-string);
+	}
+	.tk--number {
+		color: var(--syntax-number);
+	}
+	.tk--literal {
+		color: var(--syntax-literal);
+	}
+	.tk--key {
+		color: var(--syntax-key);
+	}
+	.tk--tag {
+		color: var(--syntax-tag);
+	}
+	.tk--heading {
+		color: var(--syntax-heading);
+		font-weight: var(--weight-medium);
+	}
+	.tk--comment {
+		color: var(--syntax-comment);
+		font-style: italic;
+	}
+	.tk--punct {
+		color: var(--syntax-punct);
 	}
 	.line--marked {
 		background: color-mix(in oklab, var(--accent-7) 10%, transparent);

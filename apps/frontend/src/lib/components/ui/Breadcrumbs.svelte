@@ -8,10 +8,14 @@
 		icon?: Icon;
 	}
 
-	let { crumbs, label = 'Breadcrumb' }: { crumbs: Crumb[]; label?: string } = $props();
+	let {
+		crumbs,
+		label = 'Breadcrumb',
+		mono = false
+	}: { crumbs: Crumb[]; label?: string; mono?: boolean } = $props();
 </script>
 
-<nav class="crumbs" aria-label={label}>
+<nav class="crumbs" class:crumbs--mono={mono} aria-label={label}>
 	<ol class="trail">
 		{#each crumbs as crumb, i (i)}
 			{@const last = i === crumbs.length - 1}
@@ -44,6 +48,10 @@
 <style>
 	.crumbs {
 		min-width: 0;
+	}
+	.crumbs--mono .crumb {
+		font-family: var(--font-mono);
+		font-size: var(--text-callout);
 	}
 	.trail {
 		display: flex;

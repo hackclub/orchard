@@ -126,7 +126,8 @@ export function mockApi(): Plugin {
 				const url = new URL(req.url ?? '/', 'http://mock');
 				const path = url.pathname.replace(/\/+$/, '') || '/';
 				if (!METHODS.has(method)) return send(res, 204, undefined, {});
-				const body = method === 'GET' ? undefined : await readBody(req);
+				const raw = (req.headers['content-type'] ?? '').startsWith('application/octet-stream');
+				const body = method === 'GET' || raw ? undefined : await readBody(req);
 				if (latency > 0) await new Promise((r) => setTimeout(r, latency));
 				if (!store.state.signedIn && !PUBLIC.test(path)) {
 					return send(res, 401, { statusCode: 401, message: 'Unauthorized' }, {});

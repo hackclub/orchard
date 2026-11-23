@@ -9,6 +9,7 @@
 	import Monogram from '$lib/components/ui/Monogram.svelte';
 	import Table, { type TableColumn, type TableSort } from '$lib/components/ui/Table.svelte';
 	import CodeBlock from '$lib/components/ui/CodeBlock.svelte';
+	import CodeEditor from '$lib/components/ui/CodeEditor.svelte';
 	import CommandSnippet from '$lib/components/ui/Snippet.svelte';
 	import EnvVarRow from '$lib/components/ui/EnvVarRow.svelte';
 	import LogViewer from '$lib/components/ui/LogViewer.svelte';
@@ -252,6 +253,12 @@ health_check = "/healthz"`;
 		html: `${ts(t)}${msg}`
 	}));
 	let wrap = $state(true);
+	let editing = $state(`import Fastify from 'fastify';
+
+const app = Fastify({ logger: true });
+app.get('/healthz', async () => ({ ok: true }));
+await app.listen({ port: Number(process.env.PORT ?? 3000) });
+`);
 
 	const PEOPLE = [
 		{ seed: 'seb', name: 'seb' },
@@ -343,7 +350,8 @@ health_check = "/healthz"`;
 		</div>
 		<div class="flex min-w-0 flex-col gap-3">
 			<h2 class="text-headline text-fg">Config and commands</h2>
-			<CodeBlock code={TOML} language="TOML" />
+			<CodeBlock code={TOML} language="TOML" syntax="toml" />
+			<CodeEditor bind:value={editing} syntax="typescript" label="server.ts" minHeight="8rem" />
 			<CodeBlock code={'{ "status": "ok", "uptime": 86412 }'} />
 			<CommandSnippet command="orchard deploy" />
 			<CommandSnippet
