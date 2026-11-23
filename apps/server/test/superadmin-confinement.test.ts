@@ -127,6 +127,79 @@ test('an unrestricted exec token keeps superadmin routes', async () => {
   assert.equal(req.auth.userId, USER_ID);
 });
 
+const DOCTOR_ROUTES: Array<[string, string]> = [
+  ['GET', '/apiv1/admin/doctor'],
+  ['POST', '/apiv1/admin/doctor/selftest'],
+  ['GET', '/apiv1/admin/doctor/selftest/run-1']
+];
+const SUPERADMIN_ROUTE = { [REQUIRES_SUPERADMIN_KEY]: true };
+
+test('an unrestricted exec token reaches the doctor and no other admin route', async () => {
+  for (const [method, path] of DOCTOR_ROUTES) {
+    const req = tokenRequest(method, path);
+    assert.equal(
+      await tokenGuard({ scopes: ALL_SCOPES }, SUPERADMIN_ROUTE).canActivate(context(req)),
+      true,
+      path
+    );
+    assert.equal(req.auth.userId, USER_ID);
+  }
+  for (const path of [
+    '/apiv1/admin/stats',
+    '/apiv1/admin/instance-settings',
+    '/apiv1/admin/sso/providers',
+    '/apiv1/admin/doctor/checks'
+  ]) {
+    await assert.rejects(
+      tokenGuard({ scopes: ALL_SCOPES }, SUPERADMIN_ROUTE).canActivate(
+        context(tokenRequest('GET', path))
+      ),
+      /An API token can't use this/,
+      path
+    );
+  }
+});
+
+test('the doctor still refuses confined tokens, tenants and the MCP gateway', async () => {
+  for (const [method, path] of DOCTOR_ROUTES) {
+    for (const scopes of [['read'], ['read', 'deploy']]) {
+      await assert.rejects(
+        tokenGuard({ scopes }, SUPERADMIN_ROUTE).canActivate(context(tokenRequest(method, path))),
+        REFUSED,
+        `${scopes.join(',')} ${path}`
+      );
+    }
+    await assert.rejects(
+      tokenGuard(
+        { scopes: ALL_SCOPES, restrictedProjectIds: ['p1'] },
+        SUPERADMIN_ROUTE
+      ).canActivate(context(tokenRequest(method, path))),
+      ForbiddenException,
+      path
+    );
+    await assert.rejects(
+      tokenGuard(
+        { scopes: ALL_SCOPES, scopeOrganizationId: 'org-a' },
+        SUPERADMIN_ROUTE
+      ).canActivate(context(tokenRequest(method, path))),
+      ForbiddenException,
+      path
+    );
+    await assert.rejects(
+      tokenGuard({ scopes: ALL_SCOPES }, SUPERADMIN_ROUTE, false).canActivate(
+        context(tokenRequest(method, path))
+      ),
+      /You need superadmin access/,
+      path
+    );
+    await assert.rejects(
+      gatewayGuard(SUPERADMIN_ROUTE).canActivate(context(gatewayRequest(method, path))),
+      ForbiddenException,
+      path
+    );
+  }
+});
+
 test('a project-scoped superadmin token is refused on superadmin routes', async () => {
   await assert.rejects(
     tokenGuard({ scopes: ALL_SCOPES, restrictedProjectIds: ['p1'] }).canActivate(

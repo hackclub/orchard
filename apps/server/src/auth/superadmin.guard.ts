@@ -69,6 +69,8 @@ const API_TOKEN_DENY = [
   'admin'
 ];
 
+const API_TOKEN_ADMIN_ALLOW = /^admin\/doctor(\/selftest(\/[^/]+)?)?$/;
+
 const ORG_IDENTITY_ADMIN = /^organizations\/[^/]+\/(sso|scim)(\/|$)/;
 
 const PROJECT_TOKEN_ACCOUNT_DENY = [
@@ -126,6 +128,7 @@ function normalizedPath(path: string): string {
 
 export function deniedToApiToken(path: string): boolean {
   const p = normalizedPath(path);
+  if (API_TOKEN_ADMIN_ALLOW.test(p)) return false;
   return API_TOKEN_DENY.some((d) => p === d || p.startsWith(`${d}/`)) || ORG_IDENTITY_ADMIN.test(p);
 }
 

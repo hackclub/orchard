@@ -603,7 +603,16 @@ test('tokens cannot administer identity, and the CLI routes still work', () => {
     '/apiv1/organizations/o1/scim/tokens',
     '/apiv1/organizations/o1/sso/providers',
     '/apiv1/organizations/o1/sso/settings',
-    '/apiv1/auth/passkeys/p1'
+    '/apiv1/auth/passkeys/p1',
+    '/apiv1/admin',
+    '/apiv1/admin/stats',
+    '/apiv1/admin/instance-settings',
+    '/apiv1/admin/sso/providers',
+    '/apiv1/admin/doctors',
+    '/apiv1/admin/doctor-config',
+    '/apiv1/admin/doctor/selftest/run-1/cancel',
+    '/apiv1/admin/doctor/checks',
+    '/apiv1/admin/doctor/../instance-settings'
   ]) {
     assert.equal(deniedToApiToken(path), true, path);
   }
@@ -616,7 +625,11 @@ test('tokens cannot administer identity, and the CLI routes still work', () => {
     '/apiv1/tailscale/status',
     '/apiv1/users/me/git-connections',
     '/apiv1/organizations/o1/members',
-    '/apiv1/projects/p1'
+    '/apiv1/projects/p1',
+    '/apiv1/admin/doctor',
+    '/apiv1/admin/doctor/',
+    '/apiv1/admin/doctor/selftest',
+    '/apiv1/admin/doctor/selftest/run-1'
   ]) {
     assert.equal(deniedToApiToken(path), false, path);
   }
