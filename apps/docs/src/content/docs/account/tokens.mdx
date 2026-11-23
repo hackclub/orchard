@@ -23,7 +23,7 @@ Each token has one access level. Each level includes the level before it.
 | `deploy` | `read`, plus requests that create, update, delete, scale, or restart.                                                                  |
 | `exec`   | `deploy`, plus [shells in pods](/run/logs/#open-a-shell) and databases, commands inside containers, and creating or editing sandboxes. |
 
-At any access level, a token cannot register a passkey, set a password, or call instance setup and admin routes.
+At any access level, a token cannot register a passkey, set a password, or call instance setup and admin routes. The one exception is the [doctor](/operate/doctor/#run-it), which a superadmin's unrestricted `exec` token can run.
 
 Tokens cannot manage an organization's SSO or SCIM, or change passkeys. A token restricted to projects also cannot use account routes, such as sessions, tokens, GitHub, or invitations, apart from reading its own user.
 

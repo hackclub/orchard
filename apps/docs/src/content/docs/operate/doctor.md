@@ -29,6 +29,8 @@ orchard doctor --selftest
 
 Over the API, `GET /admin/doctor` returns the report, `POST /admin/doctor/selftest` starts a self-test and returns its `id`, and `GET /admin/doctor/selftest/{id}` returns its progress and result.
 
+The doctor accepts a superadmin's browser session, or a superadmin's API token with the `exec` access level that is not limited to projects or an organization. The token that `orchard auth login` stores qualifies, unless you limited it to one organization when you signed in. These are the only admin routes that accept an API token.
+
 The server needs read access to a few cluster objects. The chart grants it. If you manage the server's RBAC yourself, allow `get` and `list` on `daemonsets`, `runtimeclasses`, `priorityclasses` and `clusterissuers`.
 
 ## Checks
