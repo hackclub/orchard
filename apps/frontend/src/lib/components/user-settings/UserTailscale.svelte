@@ -3,6 +3,7 @@
 	import {
 		Button,
 		Field,
+		Input,
 		List,
 		ListRow,
 		Modal,
@@ -19,6 +20,7 @@
 		unlinkingTailscale,
 		showTailscaleForm = $bindable(false),
 		tailscaleApiKey = $bindable(''),
+		tailscaleLoginServer = $bindable(''),
 		linkingTailscale,
 		onLink,
 		onUnlink
@@ -29,6 +31,7 @@
 		unlinkingTailscale: boolean;
 		showTailscaleForm: boolean;
 		tailscaleApiKey: string;
+		tailscaleLoginServer?: string;
 		linkingTailscale: boolean;
 		onLink: () => void;
 		onUnlink: () => void;
@@ -37,9 +40,14 @@
 
 	const uid = $props.id();
 
+	function reset() {
+		tailscaleApiKey = '';
+		tailscaleLoginServer = '';
+	}
+
 	function cancel() {
 		showTailscaleForm = false;
-		tailscaleApiKey = '';
+		reset();
 	}
 </script>
 
@@ -69,7 +77,7 @@
 	closable={false}
 	dismissable
 	labelledby="{uid}-title"
-	onclose={() => (tailscaleApiKey = '')}
+	onclose={reset}
 >
 	<form
 		id="{uid}-form"
@@ -100,6 +108,21 @@
 		</ol>
 		<Field label="Auth key" for="{uid}-key">
 			<SecretInput id="{uid}-key" bind:value={tailscaleApiKey} placeholder="tskey-auth-..." />
+		</Field>
+		<Field
+			label="Login server (optional)"
+			for="{uid}-server"
+			hint="Only for a self-hosted control server such as Headscale. Paste a reusable pre-auth key from that server above."
+		>
+			<Input
+				id="{uid}-server"
+				type="url"
+				inputmode="url"
+				autocomplete="off"
+				spellcheck="false"
+				bind:value={tailscaleLoginServer}
+				placeholder="https://headscale.example.com"
+			/>
 		</Field>
 	</form>
 	{#snippet footer()}

@@ -67,6 +67,7 @@
 	let tailscaleLoading = $state(true);
 	let unlinkingTailscale = $state(false);
 	let tailscaleApiKey = $state('');
+	let tailscaleLoginServer = $state('');
 	let linkingTailscale = $state(false);
 	let showTailscaleForm = $state(false);
 
@@ -454,7 +455,10 @@
 			const response = await apiFetch('/apiv1/tailscale/link', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ apiKey: tailscaleApiKey.trim() })
+				body: JSON.stringify({
+					apiKey: tailscaleApiKey.trim(),
+					...(tailscaleLoginServer.trim() ? { loginServer: tailscaleLoginServer.trim() } : {})
+				})
 			});
 			if (!response.ok) {
 				const data = await response.json().catch(() => ({}));
@@ -464,6 +468,7 @@
 			tailscaleLinked = true;
 			tailscaleTailnet = data.tailnet;
 			tailscaleApiKey = '';
+			tailscaleLoginServer = '';
 			showTailscaleForm = false;
 			toasts.add({
 				title: 'Tailscale connected',
@@ -854,6 +859,7 @@
 				{unlinkingTailscale}
 				bind:showTailscaleForm
 				bind:tailscaleApiKey
+				bind:tailscaleLoginServer
 				{linkingTailscale}
 				onLink={linkTailscale}
 				onUnlink={unlinkTailscale}
