@@ -96,6 +96,7 @@ model TailscaleConnection {
   accessToken     String   @map("access_token") @db.Text
   refreshToken    String?  @map("refresh_token") @db.Text
   tailnet         String   @db.VarChar(255)
+  loginServer     String?  @map("login_server") @db.VarChar(255)
   tailscaleUserId String?  @map("tailscale_user_id") @db.VarChar(255)
   displayName     String?  @map("display_name") @db.VarChar(255)
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(6)

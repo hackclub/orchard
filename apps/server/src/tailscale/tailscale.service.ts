@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { KubernetesService } from '../kubernetes/kubernetes.service';
 import { K8sWorkloadService } from '../kubernetes/k8s-workload.service';
 import { SecretCryptoService } from '../crypto/secret-crypto.service';
+import { loginServerHost, normalizeLoginServer } from '../kubernetes/tailscale-login-server';
 
 @Injectable()
 export class TailscaleService {
@@ -17,8 +18,14 @@ export class TailscaleService {
    * Link a user's Tailscale account using their reusable auth key.
    * Auth keys start with "tskey-auth-".
    */
-  async linkAccount(userId: string, authKey: string): Promise<{ tailnet: string }> {
-    if (!authKey.startsWith('tskey-auth-')) {
+  async linkAccount(
+    userId: string,
+    authKey: string,
+    loginServerInput?: unknown
+  ): Promise<{ tailnet: string; loginServer: string | null }> {
+    const loginServer = normalizeLoginServer(loginServerInput);
+
+    if (!loginServer && !authKey.startsWith('tskey-auth-')) {
       throw new BadRequestException(
         'Invalid key. Enter a Tailscale auth key (starts with tskey-auth-).'
       );
@@ -27,22 +34,24 @@ export class TailscaleService {
     // We can't easily discover the tailnet from an auth key without registering a device,
     // so we store it and resolve the tailnet when the first sidecar comes online.
     // For display, extract the key ID portion.
-    const keyId = `${authKey.slice(0, 20)}...`;
+    const tailnet = loginServer ? loginServerHost(loginServer) : `${authKey.slice(0, 20)}...`;
 
     await this.prisma.tailscaleConnection.upsert({
       where: { userId },
       create: {
         userId,
         accessToken: this.crypto.seal(authKey),
-        tailnet: keyId
+        tailnet,
+        loginServer
       },
       update: {
         accessToken: this.crypto.seal(authKey),
-        tailnet: keyId
+        tailnet,
+        loginServer
       }
     });
 
-    return { tailnet: keyId };
+    return { tailnet, loginServer };
   }
 
   async unlinkAccount(userId: string): Promise<void> {
@@ -74,7 +83,9 @@ export class TailscaleService {
     });
   }
 
-  async getStatus(userId: string): Promise<{ linked: boolean; tailnet?: string }> {
+  async getStatus(
+    userId: string
+  ): Promise<{ linked: boolean; tailnet?: string; loginServer?: string | null }> {
     const connection = await this.prisma.tailscaleConnection.findUnique({
       where: { userId }
     });
@@ -85,7 +96,8 @@ export class TailscaleService {
 
     return {
       linked: true,
-      tailnet: connection.tailnet
+      tailnet: connection.tailnet,
+      loginServer: connection.loginServer
     };
   }
 
@@ -153,7 +165,8 @@ export class TailscaleService {
       deployment.name,
       this.crypto.open(connection.accessToken),
       hostname,
-      servicePorts
+      servicePorts,
+      connection.loginServer
     );
 
     await this.prisma.deployment.update({

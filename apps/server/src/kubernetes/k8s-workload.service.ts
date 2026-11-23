@@ -42,6 +42,7 @@ import {
   tenantRuntimeClassName
 } from './trusted-images';
 import { TAILSCALE_EGRESS_EXCEPT, tailscaleImage, tailscaleSecurityContext } from './tailscale-pod';
+import { tenantBlockedEgressPorts } from './security-policies';
 import {
   buildEnvReplacePatch,
   ENV_HASH_ANNOTATION,
@@ -135,6 +136,7 @@ function resolvePvcClaimName(vol: { name?: string; pvcName?: string | null }): s
 
 import { tailscaleRoleRules } from './tailscale-rbac';
 import { isTailscaleOwned, legacyTailscaleNames, tailscaleNames } from './tailscale-names';
+import { loginServerArgs, loginServerPort } from './tailscale-login-server';
 @Injectable()
 export class K8sWorkloadService {
   private readonly logger = new Logger(K8sWorkloadService.name);
@@ -3599,7 +3601,8 @@ export class K8sWorkloadService {
     deploymentName: string,
     authKey: string,
     hostname: string,
-    servicePorts: { port: number; targetPort: number; protocol: string }[]
+    servicePorts: { port: number; targetPort: number; protocol: string }[],
+    loginServer?: string | null
   ): Promise<void> {
     this.ensureKubeConfig();
     if (!this.kc) return;
@@ -3607,6 +3610,14 @@ export class K8sWorkloadService {
     const appsApi = this.kc.makeApiClient(k8s.AppsV1Api);
     const coreApi = this.kc.makeApiClient(k8s.CoreV1Api);
     const networkingApi = this.kc.makeApiClient(k8s.NetworkingV1Api);
+
+    const coordinationPorts = [443];
+    if (loginServer) {
+      const port = loginServerPort(loginServer);
+      if (!coordinationPorts.includes(port) && !tenantBlockedEgressPorts().includes(port)) {
+        coordinationPorts.push(port);
+      }
+    }
 
     const names = tailscaleNames(deploymentName);
     const tsDeployName = names.proxy;
@@ -3723,6 +3734,9 @@ export class K8sWorkloadService {
                   { name: 'TS_USERSPACE', value: 'true' },
                   { name: 'TS_KUBE_SECRET', value: secretName },
                   { name: 'TS_SERVE_CONFIG', value: '/config/serve-config.json' },
+                  ...(loginServer
+                    ? [{ name: 'TS_EXTRA_ARGS', value: loginServerArgs(loginServer) }]
+                    : []),
                   { name: 'POD_NAME', valueFrom: { fieldRef: { fieldPath: 'metadata.name' } } },
                   { name: 'POD_UID', valueFrom: { fieldRef: { fieldPath: 'metadata.uid' } } }
                 ],
@@ -3832,7 +3846,7 @@ export class K8sWorkloadService {
               }
             ],
             ports: [
-              { port: 443, protocol: 'TCP' as any }, // DERP + coordination
+              ...coordinationPorts.map((port) => ({ port, protocol: 'TCP' as any })), // DERP + coordination
               { port: 3478, protocol: 'UDP' as any }, // STUN
               { port: 41641, protocol: 'UDP' as any } // WireGuard direct
             ]
