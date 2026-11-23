@@ -246,8 +246,9 @@ Three-level hierarchy: **Org cap** → **Member allowance** → **Deployment req
   a row `Menu`; a text file opens in `FilePreview` (side panel when the card is wide, `Sheet` when narrow) with
   `CodeBlock syntax` and edits in `CodeEditor`, saving with `expectedMtime` so a 409 `modified` asks to load theirs
   or overwrite. Uploads go through `apiUpload` (XHR for progress) in `UploadQueue`, three at a time, and a 409
-  `exists` asks to replace. The line under the toolbar says where a change lands, from the folder's mount
-  (`folderStorage` in `$lib/utils/pod-files.ts`, tested). The mock in `mock/routes/pod-files.ts` is a small
+  `exists` asks to replace. The end of the path bar says where a change lands, from the folder's mount
+  (`folderStorage` in `$lib/utils/pod-files.ts`, tested). The layout is the Requests filter bar pattern: one row of
+  28px controls on the page, then raised panes whose text column sits at the pane padding; `?guides=1` draws its edges. The mock in `mock/routes/pod-files.ts` is a small
   in-memory filesystem; `game-server` and other image-only apps answer `no_shell`, `mailer` has no `tar`, uploads
   are throttled to 3 MB/s, and `POST /apiv1/__mock/pod-files/touch?path=` bumps a file's mtime to test conflicts)
   (`SettingsRail`, `?s=`). Old ids (`metrics`, `environment`, `resources`, `volumes`, `build`,

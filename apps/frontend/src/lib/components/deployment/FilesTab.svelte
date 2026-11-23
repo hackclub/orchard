@@ -15,6 +15,7 @@
 		HardDrive,
 		Lock,
 		ScrollText,
+		Search,
 		Timer,
 		TerminalSquare,
 		TriangleAlert,
@@ -27,7 +28,8 @@
 	import EmptyState from '$lib/components/ui/EmptyState.svelte';
 	import Menu from '$lib/components/ui/Menu.svelte';
 	import MenuItem from '$lib/components/ui/MenuItem.svelte';
-	import SearchField from '$lib/components/ui/SearchField.svelte';
+	import GoldenReticle from '$lib/components/ui/GoldenReticle.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
 	import SectionCard from '$lib/components/ui/SectionCard.svelte';
 	import SelectTrigger from '$lib/components/ui/SelectTrigger.svelte';
 	import Sheet from '$lib/components/ui/Sheet.svelte';
@@ -188,6 +190,67 @@
 	);
 
 	let width = $state(1000);
+	let root = $state<HTMLElement | null>(null);
+
+	const guides = $derived($page.url.searchParams.has('guides'));
+	let guideLines = $state<{ axis: 'x' | 'y'; at: number; label?: string }[]>([]);
+
+	$effect(() => {
+		const el = root;
+		if (!guides || !el) return;
+		let frame = 0;
+		const half = (n: number) => Math.round(n * 2) / 2;
+		const measure = () => {
+			frame = 0;
+			const xs = new Set<number>();
+			const ys = new Set<number>();
+			const toolbar = el.querySelector('[data-guide="toolbar"]')?.getBoundingClientRect();
+			if (toolbar) {
+				xs.add(half(toolbar.left));
+				xs.add(half(toolbar.right));
+				ys.add(half(toolbar.top));
+				ys.add(half(toolbar.bottom));
+			}
+			const list = el.querySelector('[data-guide="list"]')?.getBoundingClientRect();
+			if (list) {
+				ys.add(half(list.top));
+				xs.add(half(list.right));
+			}
+			for (const cell of el.querySelectorAll('[data-guide="column"]')) {
+				const box = cell.getBoundingClientRect();
+				const style = getComputedStyle(cell);
+				xs.add(
+					half(
+						style.justifyContent === 'flex-end'
+							? box.right - (parseFloat(style.paddingRight) || 0)
+							: box.left + (parseFloat(style.paddingLeft) || 0)
+					)
+				);
+			}
+			const side = el.querySelector('[data-guide="preview"]')?.getBoundingClientRect();
+			if (side) {
+				xs.add(half(side.left));
+				ys.add(half(side.top));
+			}
+			guideLines = [
+				...[...xs].map((at) => ({ axis: 'x' as const, at, label: `${at}` })),
+				...[...ys].map((at) => ({ axis: 'y' as const, at, label: `${at}` }))
+			];
+		};
+		const schedule = () => {
+			if (!frame) frame = requestAnimationFrame(measure);
+		};
+		const timer = setInterval(schedule, 500);
+		addEventListener('scroll', schedule, { capture: true, passive: true });
+		addEventListener('resize', schedule);
+		schedule();
+		return () => {
+			cancelAnimationFrame(frame);
+			clearInterval(timer);
+			removeEventListener('scroll', schedule, { capture: true });
+			removeEventListener('resize', schedule);
+		};
+	});
 	const split = $derived(width >= 820);
 	const compact = $derived(width < 560);
 
@@ -474,74 +537,50 @@
 		refresh();
 	}
 
+	function startNewFolder() {
+		createError = null;
+		newFolderOpen = true;
+	}
+
 	function choosePod(name: string) {
 		guard(() => (chosenPod = name));
 	}
 </script>
 
-{#snippet headerActions()}
-	{#if current && !noShell}
-		{#if canWrite}
-			<Button
-				size="sm"
-				shape="capsule"
-				variant="ghost"
-				icon={FolderPlus}
-				onclick={() => {
-					createError = null;
-					newFolderOpen = true;
-				}}
-			>
-				New folder
-			</Button>
-			<Menu placement="bottom-end">
-				{#snippet trigger(attrs)}
-					<Button size="sm" shape="capsule" icon={Upload} iconRight={ChevronDown} {...attrs}>
-						Upload
-					</Button>
-				{/snippet}
-				<MenuItem icon={FileUp} onclick={() => fileInput?.click()}>Files</MenuItem>
-				<MenuItem icon={FolderUp} onclick={() => folderInput?.click()}>Folder</MenuItem>
-			</Menu>
-		{:else}
-			<Tooltip text={readOnlyReason}>
-				<Button size="sm" shape="capsule" variant="ghost" icon={FolderPlus} disabled>
-					New folder
-				</Button>
-			</Tooltip>
-			<Tooltip text={readOnlyReason}>
-				<Button size="sm" shape="capsule" icon={Upload} disabled>Upload</Button>
-			</Tooltip>
-		{/if}
-	{/if}
-{/snippet}
-
-{#snippet location()}
+{#snippet fact()}
 	{#if storage}
-		<p class="where where--{storage.kind}">
-			{#if storage.kind === 'volume'}
+		{@const title =
+			storage.kind === 'volume'
+				? `Saved on volume ${storage.mount.volume}`
+				: storage.kind === 'temporary'
+					? `Temporary storage on ${storage.mount.volume}, cleared when the pod restarts`
+					: storage.kind === 'read-only'
+						? readOnlyReason
+						: storage.kind === 'mounted'
+							? `On volume ${storage.mount.volume}`
+							: 'Container filesystem. Changes here are lost when the pod restarts or redeploys.'}
+		<span class="fact fact--{storage.kind}" class:fact--compact={compact} {title}>
+			{#if storage.kind === 'volume' || storage.kind === 'mounted'}
 				<HardDrive size={14} aria-hidden="true" />
-				<span>Saved on volume <span class="strong">{storage.mount.volume}</span></span>
+				<span class="fact-text">Volume {storage.mount.volume}</span>
 			{:else if storage.kind === 'temporary'}
 				<Timer size={14} aria-hidden="true" />
-				<span>Temporary storage, cleared when the pod restarts</span>
+				<span class="fact-text">Cleared on restart</span>
 			{:else if storage.kind === 'read-only'}
 				<Lock size={14} aria-hidden="true" />
-				<span>
-					Read-only{#if storage.mount && (storage.mount.type === 'config' || storage.mount.type === 'secret')}
-						{' '}{mountLabel(storage.mount.type).toLowerCase()} mount
-						<span class="strong">{storage.mount.volume}</span>{:else if storage.mount?.readOnly}
-						{' '}volume <span class="strong">{storage.mount.volume}</span>{:else}, the app's user
-						can't write here{/if}
-				</span>
-			{:else if storage.kind === 'mounted'}
-				<HardDrive size={14} aria-hidden="true" />
-				<span>On volume <span class="strong">{storage.mount.volume}</span></span>
+				<span class="fact-text"
+					>{storage.mount &&
+					storage.mount.type !== 'persistent' &&
+					storage.mount.type !== 'temporary'
+						? `Read-only ${mountLabel(storage.mount.type).toLowerCase()}`
+						: 'Read-only'}</span
+				>
 			{:else}
 				<TriangleAlert size={14} aria-hidden="true" />
-				<span>Container filesystem. Changes here are lost when the pod restarts or redeploys.</span>
+				<span class="fact-text">Lost on restart or redeploy</span>
 			{/if}
-		</p>
+			<span class="sr-only">. {title}</span>
+		</span>
 	{/if}
 {/snippet}
 
@@ -562,15 +601,19 @@
 	{/if}
 {/snippet}
 
-<SectionCard title="Files" actions={headerActions}>
-	{#if runningPods.length === 0}
+{#if guides}<GoldenReticle golden={false} lines={guideLines} />{/if}
+
+{#if runningPods.length === 0}
+	<SectionCard>
 		<EmptyState
 			title="No running pods"
 			description="Files are read from a running pod. Start the app to browse them."
 		>
 			<Button size="sm" href="?tab=overview">Open overview</Button>
 		</EmptyState>
-	{:else if noShell}
+	</SectionCard>
+{:else if noShell}
+	<SectionCard>
 		<EmptyState
 			title="This image has no shell"
 			description="Orchard reads files through a shell inside the container, so this app's files can't be browsed. The terminal won't open either."
@@ -578,191 +621,249 @@
 			{#snippet icon()}<TerminalSquare size={20} />{/snippet}
 			<Button size="sm" icon={ScrollText} href="?tab=observe&view=logs">View logs</Button>
 		</EmptyState>
-	{:else}
-		<div class="files" bind:clientWidth={width}>
-			<div class="toolbar">
-				<div class="nav">
-					<Button
+	</SectionCard>
+{:else}
+	<div class="files" bind:clientWidth={width} bind:this={root}>
+		<div class="toolbar" class:toolbar--compact={compact} data-guide="toolbar">
+			<div class="nav">
+				<Button
+					size="sm"
+					shape="capsule"
+					icon={ArrowUp}
+					label="Up one level"
+					title="Up one level"
+					disabled={path === '/'}
+					onclick={goUp}
+				/>
+				<PathBar {path} hrefFor={(p) => hrefFor({ path: p, file: null })} onnavigate={navigate}>
+					{@render fact()}
+				</PathBar>
+			</div>
+			<div class="tools">
+				<div class="filter">
+					<Input
+						bind:value={filter}
 						size="sm"
 						shape="capsule"
-						variant="ghost"
-						icon={ArrowUp}
-						label="Up one level"
-						title="Up one level"
-						disabled={path === '/'}
-						onclick={goUp}
+						icon={Search}
+						placeholder={compact ? 'Filter' : 'Filter this folder'}
+						aria-label="Filter this folder"
+						onkeydown={(e: KeyboardEvent) => {
+							if (e.key === 'Escape') filter = '';
+							if (e.key === 'ArrowDown') {
+								e.preventDefault();
+								listingRef?.focusFirst();
+							}
+						}}
 					/>
-					<PathBar {path} hrefFor={(p) => hrefFor({ path: p, file: null })} onnavigate={navigate} />
 				</div>
-				<div class="tools">
-					<div class="filter">
-						<SearchField
-							bind:value={filter}
-							size="sm"
-							placeholder="Filter this folder"
-							aria-label="Filter this folder"
-							onkeydown={(e: KeyboardEvent) => {
-								if (e.key === 'Escape') filter = '';
-								if (e.key === 'ArrowDown') {
-									e.preventDefault();
-									listingRef?.focusFirst();
-								}
-							}}
-						/>
-					</div>
+				{#if compact}
 					<Button
 						size="sm"
 						shape="capsule"
-						variant="ghost"
 						icon={showHidden ? Eye : EyeOff}
 						aria-pressed={showHidden}
-						label={compact ? (showHidden ? 'Hide dotfiles' : 'Show dotfiles') : undefined}
+						label={showHidden ? 'Hide dotfiles' : 'Show dotfiles'}
+						title={showHidden ? 'Hide dotfiles' : 'Show dotfiles'}
+						onclick={() => (showHidden = !showHidden)}
+					/>
+				{:else}
+					<Button
+						size="sm"
+						shape="capsule"
+						icon={showHidden ? Eye : EyeOff}
+						aria-pressed={showHidden}
 						title={showHidden ? 'Hide dotfiles' : 'Show dotfiles'}
 						onclick={() => (showHidden = !showHidden)}
 					>
-						{#if !compact}{hidden ? `${hidden} hidden` : 'Hidden'}{/if}
+						{hidden ? `${hidden} hidden` : 'Hidden'}
 					</Button>
-					{#if runningPods.length > 1}
-						<span class="pod">
-							<Menu placement="bottom-end">
-								{#snippet trigger(attrs, isOpen)}
-									<SelectTrigger
-										shape="capsule"
-										{...attrs}
-										open={isOpen}
-										size="sm"
-										mono
-										value={podLabel(podName)}
-										placeholder="Pick a pod"
-									/>
-								{/snippet}
-								{#each runningPods as pod (pod.name)}
-									<MenuItem
-										icon={Boxes}
-										checked={pod.name === podName}
-										onclick={() => choosePod(pod.name)}
-									>
-										{podLabel(pod.name)}
-									</MenuItem>
-								{/each}
-							</Menu>
-						</span>
-					{/if}
-				</div>
+				{/if}
+				{#if runningPods.length > 1}
+					<span class="pod">
+						<Menu placement="bottom-end">
+							{#snippet trigger(attrs, isOpen)}
+								<SelectTrigger
+									shape="capsule"
+									{...attrs}
+									open={isOpen}
+									size="sm"
+									mono
+									value={podLabel(podName)}
+									placeholder="Pick a pod"
+								/>
+							{/snippet}
+							{#each runningPods as pod (pod.name)}
+								<MenuItem
+									icon={Boxes}
+									checked={pod.name === podName}
+									onclick={() => choosePod(pod.name)}
+								>
+									{podLabel(pod.name)}
+								</MenuItem>
+							{/each}
+						</Menu>
+					</span>
+				{/if}
 			</div>
+			<div class="acts">
+				{#snippet newFolder(disabled: boolean)}
+					{#if compact}
+						<Button
+							size="sm"
+							shape="capsule"
+							icon={FolderPlus}
+							label="New folder"
+							{disabled}
+							onclick={startNewFolder}
+						/>
+					{:else}
+						<Button size="sm" shape="capsule" icon={FolderPlus} {disabled} onclick={startNewFolder}>
+							New folder
+						</Button>
+					{/if}
+				{/snippet}
+				{#snippet upload(attrs: Record<string, unknown>, disabled: boolean)}
+					{#if compact}
+						<Button size="sm" shape="capsule" icon={Upload} label="Upload" {disabled} {...attrs} />
+					{:else}
+						<Button
+							size="sm"
+							shape="capsule"
+							icon={Upload}
+							iconRight={ChevronDown}
+							{disabled}
+							{...attrs}
+						>
+							Upload
+						</Button>
+					{/if}
+				{/snippet}
+				{#if canWrite}
+					{@render newFolder(false)}
+					<Menu placement="bottom-end">
+						{#snippet trigger(attrs)}
+							{@render upload(attrs, false)}
+						{/snippet}
+						<MenuItem icon={FileUp} onclick={() => fileInput?.click()}>Files</MenuItem>
+						<MenuItem icon={FolderUp} onclick={() => folderInput?.click()}>Folder</MenuItem>
+					</Menu>
+				{:else}
+					<Tooltip text={readOnlyReason || 'Loading this folder'}>
+						{@render newFolder(true)}
+					</Tooltip>
+					<Tooltip text={readOnlyReason || 'Loading this folder'}>
+						{@render upload({}, true)}
+					</Tooltip>
+				{/if}
+			</div>
+		</div>
 
-			{@render location()}
-
-			<div class="body" class:body--split={split && !!previewEntry}>
-				<div
-					class="drop"
-					class:drop--over={dragging}
-					role="region"
-					aria-label="Files in {path}"
-					{ondragenter}
-					{ondragover}
-					{ondragleave}
-					{ondrop}
-				>
-					{#if listingError && !listing}
-						{#if listingError.status === 404}
-							<EmptyState title="This folder doesn't exist" description="{path} isn't in this pod.">
-								<Button size="sm" icon={ArrowUp} onclick={goUp}>Up one level</Button>
-							</EmptyState>
-						{:else}
+		<div class="body" class:body--split={split && !!previewEntry}>
+			<div
+				class="pane drop"
+				data-guide="list"
+				role="region"
+				aria-label="Files in {path}"
+				{ondragenter}
+				{ondragover}
+				{ondragleave}
+				{ondrop}
+			>
+				{#if listingError && !listing}
+					{#if listingError.status === 404}
+						<EmptyState title="This folder doesn't exist" description="{path} isn't in this pod.">
+							<Button size="sm" icon={ArrowUp} onclick={goUp}>Up one level</Button>
+						</EmptyState>
+					{:else}
+						<div class="state">
 							<Alert tone="error" title="Could not read this folder">
 								{describeFileError(listingError, 'list')}
 								{#snippet actions()}
 									<Button size="sm" variant="ghost" onclick={refresh}>Retry</Button>
 								{/snippet}
 							</Alert>
+						</div>
+					{/if}
+				{:else if !listing}
+					<div class="state loading" aria-busy="true">
+						<Skeleton height="1.75rem" />
+						<Skeleton height="1.75rem" />
+						<Skeleton height="1.75rem" />
+						<Skeleton height="1.75rem" />
+					</div>
+				{:else if listing.entries.length === 0}
+					<EmptyState
+						title="Empty folder"
+						description={canWrite ? 'Drop files here or upload them.' : undefined}
+					>
+						{#if canWrite}
+							<Button size="sm" icon={Upload} onclick={() => fileInput?.click()}
+								>Upload files</Button
+							>
+						{:else}
+							<Button size="sm" icon={ArrowUp} onclick={goUp}>Up one level</Button>
 						{/if}
-					{:else if !listing}
-						<div class="loading" aria-busy="true">
-							<Skeleton height="2.25rem" />
-							<Skeleton height="2.25rem" />
-							<Skeleton height="2.25rem" />
-							<Skeleton height="2.25rem" />
-						</div>
-					{:else if listing.entries.length === 0}
-						<div class="empty">
-							<EmptyState
-								title="Empty folder"
-								description={canWrite ? 'Drop files here or upload them.' : undefined}
-							>
-								{#if canWrite}
-									<Button size="sm" icon={Upload} onclick={() => fileInput?.click()}
-										>Upload files</Button
-									>
-								{:else}
-									<Button size="sm" icon={ArrowUp} onclick={goUp}>Up one level</Button>
-								{/if}
-							</EmptyState>
-						</div>
-					{:else if shown.length === 0}
-						<div class="empty">
-							<EmptyState
-								title="Nothing matches"
-								description={filter
-									? `No names here contain “${filter}”.`
-									: 'Every item here is hidden.'}
-							>
-								{#if filter}
-									<Button size="sm" onclick={() => (filter = '')}>Clear filter</Button>
-								{:else}
-									<Button size="sm" icon={Eye} onclick={() => (showHidden = true)}
-										>Show hidden</Button
-									>
-								{/if}
-							</EmptyState>
-						</div>
-					{:else}
-						<FileListing
-							bind:this={listingRef}
-							entries={shown}
-							path={listing.path}
-							{mounts}
-							bind:sort
-							selected={previewEntry?.name ?? null}
-							{canWrite}
-							{readOnlyReason}
-							busy={stale}
-							downloadHref={(e) => downloadUrl(target, joinPath(path, e.name))}
-							onopen={open}
-							{onaction}
-							onup={goUp}
-						/>
-					{/if}
-					{#if current?.truncated}
-						<p class="more-note">
-							This folder has more entries than Orchard lists. Showing the first {entries.length.toLocaleString()}.
-						</p>
-					{/if}
-					{#if dragging}
-						<div class="drop-cue" class:drop-cue--blocked={!canWrite}>
-							{#if canWrite}
-								<Upload size={18} aria-hidden="true" />
-								<span>Drop to upload to <span class="mono">{path}</span></span>
-							{:else}
-								<Lock size={18} aria-hidden="true" />
-								<span>{readOnlyReason}</span>
-							{/if}
-						</div>
-					{/if}
-				</div>
-				{#if split && previewEntry}
-					<aside class="side" aria-label="Preview of {previewEntry.name}">
-						{@render preview(false)}
-					</aside>
+					</EmptyState>
+				{:else if shown.length === 0}
+					<EmptyState
+						title="Nothing matches"
+						description={filter
+							? `No names here contain “${filter}”.`
+							: 'Every item here is hidden.'}
+					>
+						{#if filter}
+							<Button size="sm" onclick={() => (filter = '')}>Clear filter</Button>
+						{:else}
+							<Button size="sm" icon={Eye} onclick={() => (showHidden = true)}>Show hidden</Button>
+						{/if}
+					</EmptyState>
+				{:else}
+					<FileListing
+						bind:this={listingRef}
+						entries={shown}
+						path={listing.path}
+						{mounts}
+						bind:sort
+						selected={previewEntry?.name ?? null}
+						{canWrite}
+						{readOnlyReason}
+						busy={stale}
+						downloadHref={(e) => downloadUrl(target, joinPath(path, e.name))}
+						onopen={open}
+						{onaction}
+						onup={goUp}
+					/>
+				{/if}
+				{#if current?.truncated}
+					<p class="more-note">
+						This folder has more entries than Orchard lists. Showing the first {entries.length.toLocaleString()}.
+					</p>
+				{/if}
+				{#if dragging}
+					<div class="drop-cue" class:drop-cue--blocked={!canWrite}>
+						{#if canWrite}
+							<Upload size={18} aria-hidden="true" />
+							<span>Drop to upload to <span class="mono">{path}</span></span>
+						{:else}
+							<Lock size={18} aria-hidden="true" />
+							<span>{readOnlyReason}</span>
+						{/if}
+					</div>
 				{/if}
 			</div>
-
-			{#if queue.items.length}
-				<UploadTray {queue} />
+			{#if split && previewEntry}
+				<aside class="pane side" data-guide="preview" aria-label="Preview of {previewEntry.name}">
+					{@render preview(false)}
+				</aside>
 			{/if}
 		</div>
-	{/if}
-</SectionCard>
+
+		{#if queue.items.length}
+			<UploadTray {queue} />
+		{/if}
+	</div>
+{/if}
 
 <input bind:this={fileInput} type="file" multiple hidden onchange={onPicked} />
 <input bind:this={folderInput} type="file" webkitdirectory hidden onchange={onPicked} />
@@ -847,6 +948,8 @@
 
 <style>
 	.files {
+		--pane-h: 32rem;
+		--pane-pad: 1rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
@@ -856,69 +959,119 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
+		gap: 0.5rem 1rem;
+		min-width: 0;
+	}
+	.nav,
+	.tools,
+	.acts {
+		display: flex;
+		align-items: center;
 		gap: 0.5rem;
 		min-width: 0;
 	}
 	.nav {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-		flex: 1 1 22rem;
-		min-width: 0;
+		flex: 1 1 24rem;
 	}
 	.tools {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
 		flex: 0 1 auto;
-		min-width: 0;
+	}
+	.acts {
+		flex: 0 0 auto;
+		margin-left: auto;
 	}
 	.filter {
-		flex: 1 1 13rem;
+		flex: 1 1 12rem;
 		min-width: 8rem;
 	}
 	.pod {
 		display: flex;
 		flex-shrink: 0;
 	}
-	.where {
-		display: flex;
+	.fact {
+		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		min-width: 0;
+		gap: 0.375rem;
+		flex-shrink: 0;
 		color: var(--text-muted);
 		font-size: var(--text-caption);
 		line-height: var(--lh-caption);
+		white-space: nowrap;
 	}
-	.where :global(svg) {
+	.fact :global(svg) {
 		flex-shrink: 0;
 	}
-	.where--container {
+	.fact--container {
 		color: var(--status-warning);
 	}
-	.strong {
-		color: var(--text-default);
-		font-weight: var(--weight-medium);
+	.fact-text {
+		text-box: trim-both cap alphabetic;
+	}
+	.fact--compact .fact-text {
+		display: none;
+	}
+	.toolbar--compact {
+		column-gap: 0.5rem;
+	}
+	.toolbar--compact .tools {
+		flex: 1 1 0;
+	}
+	.toolbar--compact .filter {
+		flex-basis: 6rem;
+		min-width: 6rem;
+	}
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
 	}
 	.body {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
+		align-items: start;
 		gap: 1rem;
 		min-width: 0;
 	}
 	.body--split {
 		grid-template-columns: minmax(0, 1fr) minmax(22rem, 1fr);
 	}
+	.pane {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		border-radius: calc(var(--section-r, var(--radius-card)) * var(--corner-scale));
+		corner-shape: var(--corner);
+		background: var(--bg-surface);
+		box-shadow: var(--shadow-raised);
+		overflow: clip;
+	}
+	.drop {
+		max-height: var(--pane-h);
+	}
+	.side {
+		height: var(--pane-h);
+		padding: var(--pane-pad);
+	}
+	.state {
+		padding: var(--pane-pad);
+	}
+	.loading {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
 	.more-note {
-		margin: 0.5rem 0 0;
-		padding-inline: 1rem;
+		flex-shrink: 0;
+		margin: 0;
+		padding: 0.75rem var(--pane-pad);
+		box-shadow: inset 0 1px 0 var(--border-default);
 		color: var(--text-faint);
 		font-size: var(--text-caption);
 		line-height: var(--lh-caption);
-	}
-	.drop {
-		position: relative;
-		min-width: 0;
 	}
 	.drop-cue {
 		position: absolute;
@@ -928,8 +1081,6 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
-		border-radius: calc(var(--radius-card) * var(--corner-scale));
-		corner-shape: var(--corner);
 		background: color-mix(in oklab, var(--accent-7) 10%, var(--bg-surface));
 		box-shadow: inset 0 0 0 1.5px var(--accent-7);
 		color: var(--text-default);
@@ -944,28 +1095,6 @@
 	}
 	.mono {
 		font-family: var(--font-mono);
-	}
-	.loading {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-	.empty {
-		padding-block: 1.5rem;
-		border-radius: calc(var(--radius-card) * var(--corner-scale));
-		corner-shape: var(--corner);
-		background: var(--bg-sunken);
-	}
-	.side {
-		display: flex;
-		flex-direction: column;
-		min-width: 0;
-		height: 32.5rem;
-		padding: 1rem;
-		border-radius: calc(var(--radius-card) * var(--corner-scale));
-		corner-shape: var(--corner);
-		background: var(--bg-surface);
-		box-shadow: var(--shadow-raised);
 	}
 	.names {
 		margin: 0;

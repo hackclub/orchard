@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { tick, type Snippet } from 'svelte';
 	import { HardDrive, Pencil } from 'lucide-svelte';
 	import Breadcrumbs from '$lib/components/ui/Breadcrumbs.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
@@ -8,11 +8,13 @@
 	let {
 		path,
 		hrefFor,
-		onnavigate
+		onnavigate,
+		children = undefined
 	}: {
 		path: string;
 		hrefFor: (path: string) => string;
 		onnavigate: (path: string) => void;
+		children?: Snippet;
 	} = $props();
 
 	let editing = $state(false);
@@ -91,6 +93,7 @@
 		>
 			<Breadcrumbs {crumbs} label="Folder" mono />
 		</div>
+		{#if children}<span class="end">{@render children()}</span>{/if}
 		<button type="button" class="edit" aria-label="Type a path" title="Type a path" onclick={edit}>
 			<Pencil size={13} aria-hidden="true" />
 		</button>
@@ -101,18 +104,28 @@
 	.bar {
 		display: flex;
 		align-items: center;
+		gap: 0.5rem;
 		flex: 1 1 16rem;
 		min-width: 0;
-		height: 2rem;
-		padding-inline: 0.75rem 0.25rem;
-		border-radius: 999px;
-		background: color-mix(in oklab, var(--neutral-10) 5%, transparent);
+		height: 1.75rem;
+		padding: 0 0.125rem 0 0.6875rem;
+		border-radius: calc(0.5rem * var(--corner-scale));
+		corner-shape: var(--corner);
+		background: color-mix(in oklab, var(--neutral-10) 6%, transparent);
 		box-shadow: inset 0 0 0 0.5px color-mix(in oklab, var(--neutral-10) 6%, transparent);
 	}
 	.bar--editing {
 		padding: 0;
 		background: none;
 		box-shadow: none;
+	}
+	.bar--editing > :global(*) {
+		flex: 1;
+	}
+	.end {
+		display: flex;
+		flex-shrink: 0;
+		min-width: 0;
 	}
 	.trail {
 		flex: 1;
@@ -135,7 +148,8 @@
 		width: 1.5rem;
 		height: 1.5rem;
 		border: none;
-		border-radius: 999px;
+		border-radius: calc((0.5rem - 0.125rem) * var(--corner-scale));
+		corner-shape: var(--corner);
 		background: none;
 		color: var(--text-faint);
 		cursor: pointer;

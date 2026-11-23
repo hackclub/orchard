@@ -310,24 +310,28 @@
 	.head {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.75rem;
 	}
 	.title-row {
+		--control-shift: calc(0.5cap - 0.875rem);
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		min-height: 1.75rem;
+		font-size: var(--text-headline);
 	}
 	.name {
 		flex: 1;
 		min-width: 0;
 		overflow-x: clip;
+		padding-block: 0.3em;
+		margin-block: -0.3em;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		font-size: var(--text-headline);
 		line-height: var(--lh-headline);
 		font-weight: var(--weight-medium);
 		color: var(--text-default);
+		text-box: trim-both cap alphabetic;
 	}
 	.close {
 		display: inline-flex;
@@ -336,7 +340,8 @@
 		flex-shrink: 0;
 		width: 1.75rem;
 		height: 1.75rem;
-		margin-right: -0.25rem;
+		margin-block: var(--control-shift);
+		margin-right: var(--control-shift);
 		border: none;
 		border-radius: 999px;
 		background: none;
@@ -363,11 +368,13 @@
 		line-height: var(--lh-caption);
 		font-variant-numeric: tabular-nums;
 	}
+	.facts > span {
+		text-box: trim-both cap alphabetic;
+	}
 	.actions {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		margin-top: 0.25rem;
 	}
 	.body {
 		display: flex;

@@ -136,10 +136,14 @@
 
 	const visibleEntries = $derived(entries.slice(windowRange.start, windowRange.end));
 
+	let gutter = $state(0);
+
 	$effect(() => {
 		void visibleEntries;
+		void viewport;
 		const height = listEl?.querySelector<HTMLElement>('.tr')?.getBoundingClientRect().height;
 		if (height) rowHeight = height;
+		if (listEl) gutter = listEl.offsetWidth - listEl.clientWidth;
 	});
 
 	function iconFor(entry: PodFileEntry) {
@@ -226,10 +230,10 @@
 	}
 </script>
 
-<div class="listing" bind:clientWidth={width}>
+<div class="listing" bind:clientWidth={width} style:--gutter="{gutter}px">
 	<div class="head" style:grid-template-columns={template}>
 		{#each columns as col (col.id)}
-			<div class="hcell" class:hcell--end={col.id === 'size'}>
+			<div class="hcell" class:hcell--end={col.id === 'size'} data-guide="column">
 				{#if col.id === 'name' || col.id === 'size' || col.id === 'modified'}
 					{@const key = col.id === 'name' ? 'name' : col.id === 'size' ? 'size' : 'modified'}
 					{@const label = col.id === 'name' ? 'Name' : col.id === 'size' ? 'Size' : 'Modified'}
@@ -406,19 +410,34 @@
 
 <style>
 	.listing {
+		--pad-x: 1rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.25rem;
+		flex: 1 1 auto;
 		min-width: 0;
 		min-height: 0;
 	}
 	.head {
+		position: relative;
 		display: grid;
+		flex-shrink: 0;
 		align-items: center;
-		min-height: 2.25rem;
+		min-height: calc(var(--pad-x) * 2 + 1cap);
+		padding-right: var(--gutter, 0px);
 		color: var(--text-muted);
 		font-size: var(--text-caption);
+		line-height: var(--lh-caption);
 		font-weight: var(--weight-medium);
+	}
+	.head::after {
+		content: '';
+		position: absolute;
+		right: calc(var(--pad-x) + var(--gutter, 0px));
+		bottom: 0;
+		left: var(--pad-x);
+		height: 1px;
+		background: var(--border-default);
+		pointer-events: none;
 	}
 	.hcell {
 		display: flex;
@@ -428,21 +447,24 @@
 		white-space: nowrap;
 	}
 	.hcell:first-child {
-		padding-left: 1rem;
+		padding-left: var(--pad-x);
 	}
 	.hcell:last-child {
-		padding-right: 1rem;
+		padding-right: var(--pad-x);
 	}
 	.hcell--end {
 		justify-content: flex-end;
+	}
+	.hcell > span {
+		text-box: trim-both cap alphabetic;
 	}
 	.sort {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
 		height: 1.5rem;
-		padding: 0 0.375rem;
-		margin-inline: -0.375rem;
+		padding: 0 0.5rem;
+		margin: 0 -0.5rem;
 		border: 0;
 		border-radius: calc(0.375rem * var(--corner-scale));
 		corner-shape: var(--corner);
@@ -453,6 +475,9 @@
 		transition:
 			background-color var(--dur-fast) ease,
 			color var(--dur-fast) ease;
+	}
+	.sort > span {
+		text-box: trim-both cap alphabetic;
 	}
 	.hcell--end .sort {
 		flex-direction: row-reverse;
@@ -468,34 +493,27 @@
 		outline: 2px solid var(--focus-ring-color);
 		outline-offset: -2px;
 	}
+	.sort :global(svg) {
+		color: var(--text-faint);
+	}
 	.sort :global(.sort-idle) {
-		opacity: 0.45;
+		opacity: 0;
+		transition: opacity var(--dur-fast) ease;
+	}
+	.sort:is(:hover, :focus-visible) :global(.sort-idle) {
+		opacity: 1;
 	}
 	.list {
 		position: relative;
+		flex: 1 1 auto;
 		min-height: 0;
-		max-height: 30rem;
 		overflow-x: hidden;
 		overflow-y: auto;
 		overscroll-behavior: contain;
-		border-radius: calc(var(--radius-card) * var(--corner-scale));
-		corner-shape: var(--corner);
-		background: var(--bg-sunken);
 		transition: opacity var(--fade-in) var(--curve-out);
 	}
 	.list--busy {
 		opacity: 0.6;
-	}
-	.list :global(.tr--interactive:hover::after) {
-		background: var(--bg-active);
-	}
-	.list :global(.tr--selected::after) {
-		background: color-mix(in oklab, var(--accent-7) 14%, var(--bg-surface));
-	}
-	.list :global(.hit:focus-visible) {
-		outline: 2px solid var(--focus-ring-color);
-		outline-offset: -2px;
-		border-radius: calc(var(--radius-card) - 0.375rem);
 	}
 	.name {
 		display: flex;

@@ -50,13 +50,15 @@
 		</div>
 		{#if queue.active}
 			<span class="pct">{percent}%</span>
-			<Button size="sm" shape="capsule" variant="ghost" onclick={() => queue.cancel()}
-				>Cancel</Button
+			<span class="trail"
+				><Button size="sm" shape="capsule" variant="ghost" onclick={() => queue.cancel()}
+					>Cancel</Button
+				></span
 			>
 		{:else}
 			<button
 				type="button"
-				class="icon-btn"
+				class="icon-btn icon-btn--trail"
 				aria-label="Dismiss uploads"
 				onclick={() => queue.clear()}
 			>
@@ -114,9 +116,9 @@
 	.tray {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
-		padding: 0.75rem;
-		border-radius: calc(var(--radius-card) * var(--corner-scale));
+		gap: 0.75rem;
+		padding: 1rem;
+		border-radius: calc(var(--section-r, var(--radius-card)) * var(--corner-scale));
 		corner-shape: var(--corner);
 		background: var(--bg-surface);
 		box-shadow: var(--shadow-raised);
@@ -124,7 +126,7 @@
 	.top {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
 	}
 	.lead {
 		display: flex;
@@ -156,6 +158,13 @@
 		font-size: var(--text-caption);
 		font-variant-numeric: tabular-nums;
 	}
+	.trail {
+		display: flex;
+		margin-right: -0.625rem;
+	}
+	.icon-btn--trail {
+		margin-right: -0.3125rem;
+	}
 	.rows {
 		display: flex;
 		flex-direction: column;
@@ -168,7 +177,7 @@
 	.row {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
 		min-height: 1.75rem;
 		font-size: var(--text-caption);
 		line-height: var(--lh-caption);
