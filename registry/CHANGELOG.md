@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/hackclub/orchard/compare/templates/v0.6.1...templates/v0.7.0) (2026-11-23)
+
+
+### Features
+
+* **templates:** make nephthys-plus ticket channel optional ([#12](https://github.com/hackclub/orchard/issues/12)) ([ddd0815](https://github.com/hackclub/orchard/commit/ddd0815bd0a335dc6aefd9f5f67e78cadbf1a3eb))
+
 ## [0.6.1](https://github.com/hackclub/orchard/compare/templates/v0.6.0...templates/v0.6.1) (2026-11-17)
 
 

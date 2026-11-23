@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.97.0](https://github.com/hackclub/orchard/compare/server/v2.96.0...server/v2.97.0) (2026-11-23)
+
+
+### Features
+
+* list and download files in a pod ([#8](https://github.com/hackclub/orchard/issues/8)) ([9707d06](https://github.com/hackclub/orchard/commit/9707d0687f848d97797335d2196781f142749749))
+* **server:** browse, edit and upload pod files ([8cb6641](https://github.com/hackclub/orchard/commit/8cb6641cdbe6d7de4cafbceb0333ddf78a913655))
+
+
+### Bug Fixes
+
+* **server:** bound pod file downloads and listings ([bc08cc3](https://github.com/hackclub/orchard/commit/bc08cc3b94c582db99ea88346a43d009239a7d04))
+* **server:** let an unrestricted superadmin token run the doctor ([#18](https://github.com/hackclub/orchard/issues/18)) ([d54749b](https://github.com/hackclub/orchard/commit/d54749b8a6f20d61adb7166290ecc5313b23cd40))
+* **server:** raise MCP OAuth redirect URI limit and support client_secret_basic ([#11](https://github.com/hackclub/orchard/issues/11)) ([d505b70](https://github.com/hackclub/orchard/commit/d505b70db11261cffbe01d12937a4d34ca35eb17))
+
 ## [2.96.0](https://github.com/hackclub/orchard/compare/server/v2.95.4...server/v2.96.0) (2026-11-17)
 
 

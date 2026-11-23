@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.89.0](https://github.com/hackclub/orchard/compare/frontend/v1.88.0...frontend/v1.89.0) (2026-11-23)
+
+
+### Features
+
+* **frontend:** full file explorer in the files tab ([09d7942](https://github.com/hackclub/orchard/commit/09d7942ee03973228887d0728d0a1d91a07b22d1))
+* list and download files in a pod ([#8](https://github.com/hackclub/orchard/issues/8)) ([9707d06](https://github.com/hackclub/orchard/commit/9707d0687f848d97797335d2196781f142749749))
+
+
+### Bug Fixes
+
+* **frontend:** align the files tab to the guides ([82e8548](https://github.com/hackclub/orchard/commit/82e8548c410b8aa6f85e8e37201446ff417c44b0))
+* **frontend:** open symlinked folders in the files tab ([4361a9b](https://github.com/hackclub/orchard/commit/4361a9b86b36488b63e3fb0e789d16186978d2a3))
+* **frontend:** redeem the orchardctl login link when its code arrives ([#15](https://github.com/hackclub/orchard/issues/15)) ([1152ca3](https://github.com/hackclub/orchard/commit/1152ca348b536271bd87c1a9d2549d0dab20f223))
+
 ## [1.88.0](https://github.com/hackclub/orchard/compare/frontend/v1.87.0...frontend/v1.88.0) (2026-11-17)
 
 

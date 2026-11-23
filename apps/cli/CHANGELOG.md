@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.44.0](https://github.com/hackclub/orchard/compare/cli/v0.43.0...cli/v0.44.0) (2026-11-23)
+
+
+### Features
+
+* list and download files in a pod ([#8](https://github.com/hackclub/orchard/issues/8)) ([9707d06](https://github.com/hackclub/orchard/commit/9707d0687f848d97797335d2196781f142749749))
+* **server:** browse, edit and upload pod files ([8cb6641](https://github.com/hackclub/orchard/commit/8cb6641cdbe6d7de4cafbceb0333ddf78a913655))
+
 ## [0.43.0](https://github.com/hackclub/orchard/compare/cli/v0.42.0...cli/v0.43.0) (2026-11-17)
 
 
