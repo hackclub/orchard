@@ -83,7 +83,7 @@ server:
   replicas: 2
   image:
     name: server
-    tag: "2.97.0"
+    tag: "2.97.1"
   service:
     port: 3001
   resources:
@@ -326,7 +326,7 @@ mcp:
   replicas: 1
   image:
     name: mcp
-    tag: "2.97.0"
+    tag: "2.97.1"
   service:
     port: 3100
   resources:
