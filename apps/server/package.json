@@ -1,6 +1,6 @@
 {
   "name": "server",
-  "version": "2.97.0",
+  "version": "2.97.1",
   "type": "commonjs",
   "private": true,
   "license": "AGPL-3.0-only",

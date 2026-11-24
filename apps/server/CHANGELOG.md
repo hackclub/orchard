@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.97.1](https://github.com/hackclub/orchard/compare/server/v2.97.0...server/v2.97.1) (2026-11-24)
+
+
+### Bug Fixes
+
+* **server:** queue fast builds when their vm is full ([b832fcd](https://github.com/hackclub/orchard/commit/b832fcdae12072e4857dcf7b1f49f9862d4c72cb))
+
 ## [2.97.0](https://github.com/hackclub/orchard/compare/server/v2.96.0...server/v2.97.0) (2026-11-23)
 
 
