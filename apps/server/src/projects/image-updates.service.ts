@@ -284,7 +284,8 @@ export class ImageUpdatesService {
     const restartFailed =
       sameImage &&
       row.imageCheckError?.startsWith('restart_failed') &&
-      latestDigest === row.imageLatestDigest;
+      latestDigest === row.imageLatestDigest &&
+      runningDigest !== latestDigest;
     const written = await this.prisma.deployment.updateMany({
       where: { id: row.id, imageUpdatedAt: row.imageUpdatedAt },
       data: {

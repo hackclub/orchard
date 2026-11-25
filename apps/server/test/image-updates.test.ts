@@ -399,3 +399,16 @@ test('a long error still fits the column in both the sweep and a rollout', async
   assert.equal(tracked.imageCheckError?.length, 100);
   assert.match(tracked.imageCheckError ?? '', /^restart_failed: x+$/);
 });
+
+test('a restart failure clears once the pods run the latest digest', async () => {
+  const tracked = fakeRow('tracked', { imageAutoUpdate: true });
+  const { svc } = service([tracked], async () => {
+    throw new Error('quota exceeded');
+  });
+  await svc.sweep();
+  assert.match(tracked.imageCheckError ?? '', /^restart_failed/);
+  (svc as any).k8sWorkload.runningImageDigests = async () => [NEW];
+  const status = await svc.checkNow('tracked');
+  assert.equal(status.error, null);
+  assert.equal(status.updateAvailable, false);
+});
