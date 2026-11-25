@@ -375,3 +375,24 @@ test('a check that started before a rollout does not overwrite it', async () => 
   assert.equal(status.pending, true);
   assert.equal(tracked.imageCheckedAt, null);
 });
+
+test('a long error still fits the column in both the sweep and a rollout', async () => {
+  const long = 'x'.repeat(300);
+  const broken = fakeRow('broken', { imageCheckedAt: new Date(0) });
+  const swept = service([broken]);
+  (swept.svc as any).check = async () => {
+    throw new Error(long);
+  };
+  await swept.svc.sweep();
+  assert.ok(broken.imageCheckedAt && broken.imageCheckedAt.getTime() > 0);
+  assert.equal(broken.imageCheckError?.length, 100);
+
+  const tracked = fakeRow('tracked', { imageAutoUpdate: true });
+  const { svc } = service([tracked], async () => {
+    throw new Error(long);
+  });
+  await svc.sweep();
+  assert.equal(tracked.imageAttemptedDigest, null);
+  assert.equal(tracked.imageCheckError?.length, 100);
+  assert.match(tracked.imageCheckError ?? '', /^restart_failed: x+$/);
+});

@@ -145,7 +145,7 @@ export class ImageUpdatesService {
               where: { id: row.id },
               data: {
                 imageCheckedAt: new Date(),
-                imageCheckError: String(err?.message ?? err).slice(0, 200)
+                imageCheckError: clipError(String(err?.message ?? err))
               }
             })
             .catch(() => undefined);
@@ -288,7 +288,7 @@ export class ImageUpdatesService {
         imageLatestDigest: latestDigest,
         imageRunningDigest: runningDigest,
         imageCheckedAt: new Date(),
-        imageCheckError: latest ? null : (failure ?? 'unknown'),
+        imageCheckError: latest ? null : clipError(failure ?? 'unknown'),
         ...(!sameImage && { imageAttemptedDigest: null })
       }
     });
@@ -339,7 +339,7 @@ export class ImageUpdatesService {
           },
           data: {
             imageAttemptedDigest: row.imageAttemptedDigest ?? null,
-            imageCheckError: `restart_failed: ${String((err as any)?.message ?? err).slice(0, 180)}`
+            imageCheckError: clipError(`restart_failed: ${String((err as any)?.message ?? err)}`)
           }
         })
         .catch(() => undefined);
@@ -381,6 +381,10 @@ export class ImageUpdatesService {
       })
       .catch(() => undefined);
   }
+}
+
+function clipError(message: string): string {
+  return message.slice(0, 100);
 }
 
 function shortDigest(digest: string | null): string | null {
