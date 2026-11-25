@@ -6710,6 +6710,9 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       imagePullPolicy?: 'Always' | 'IfNotPresent';
       pdbMinAvailable?: number;
       createdByGraft?: string;
+      // Overrides the image's CMD. An image-source deployment never runs a
+      // builder, so this is the only way to run `redis-server --appendonly
+      // yes` instead of whatever the image starts with.
       startCommand?: string | null;
     },
     clerkId: string,

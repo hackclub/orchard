@@ -1,6 +1,7 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { INQUIRER, ModuleRef } from '@nestjs/core';
 import * as k8s from '@kubernetes/client-node';
+import { posix } from 'path';
 import { PassThrough } from 'stream';
 import { isSafeGitRef } from '../../docker/build-input';
 import { onEnvironmentEnvChanged, type EnvironmentEnvChange } from '../../env/env-change-signal';
@@ -254,8 +255,9 @@ export class ProjectsDoorV1 {
     container?: string
   ): Promise<void> {
     assertPodPath(path);
-    if (path.replace(/\/+$/, '') === '') throw new Error('refusing to delete /');
-    const res = await this.execInPod(deploymentId, podName, `rm -rf -- ${shellQuote(path)}`, {
+    const normalized = posix.normalize(path);
+    if (normalized === '/' || normalized === '//') throw new Error('refusing to delete /');
+    const res = await this.execInPod(deploymentId, podName, `rm -rf -- ${shellQuote(normalized)}`, {
       container
     });
     if (res.exitCode !== 0) throw new Error(res.stderr.trim() || `cannot delete ${path}`);
