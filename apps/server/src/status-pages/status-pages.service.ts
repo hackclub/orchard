@@ -367,7 +367,16 @@ export class StatusPagesService {
               take: TRANSITIONS_PER_DEPLOYMENT
             })
           )
-        ).then((rows) => rows.flat()),
+        ).then((rows) => {
+          for (const r of rows) {
+            if (r.length === TRANSITIONS_PER_DEPLOYMENT) {
+              this.logger.warn(
+                `status page ${JSON.stringify(slug)}: deployment ${r[0].deploymentId} history cut at ${TRANSITIONS_PER_DEPLOYMENT} transitions`
+              );
+            }
+          }
+          return rows.flat();
+        }),
         this.prisma.database.findMany({
           where: { id: { in: databaseIds }, project: { organizationId: page.organizationId } },
           select: { id: true, name: true, status: true }
