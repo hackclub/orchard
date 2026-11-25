@@ -161,9 +161,6 @@ export class OrganizationsService {
       }
     });
 
-    // Attach the caller's role per org so the client can gate admin-only
-    // entry points (e.g. the org settings link) without a per-org request.
-    // Superadmins act as owner in orgs they aren't a member of.
     const memberships = await this.prisma.organizationMember.findMany({
       where: { userId: user.id },
       select: { organizationId: true, role: true }
@@ -182,7 +179,7 @@ export class OrganizationsService {
           }
         : {
             ...this.scrubOrgSecrets(o as any),
-            myRole: roleByOrg.get(o.id) ?? (isSuperAdmin ? 'owner' : null)
+            myRole: isSuperAdmin ? 'owner' : (roleByOrg.get(o.id) ?? null)
           }
     );
   }

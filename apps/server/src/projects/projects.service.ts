@@ -2359,8 +2359,8 @@ export class ProjectsService {
     // superadmin viewing an org they aren't actually a member of.
     const m = memberships[0];
     let currentMember: { role: string; synthetic: boolean } | null = null;
-    if (m) currentMember = { role: m.role, synthetic: false };
-    else if (isSuper) currentMember = { role: 'owner' as const, synthetic: true };
+    if (isSuper) currentMember = { role: 'owner' as const, synthetic: !m };
+    else if (m) currentMember = { role: m.role, synthetic: false };
 
     const [projects, deployments, databases] = await Promise.all([
       this.listProjects(userId, org.id, { members: false }),
