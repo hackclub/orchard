@@ -312,7 +312,7 @@ test('auto-update restarts once per new digest and skips a rollout already runni
   assert.deepEqual(restarts, ['tracked']);
 });
 
-test('a failed auto-update restart is checked again and retried on the next sweep', async () => {
+test('a failed auto-update restart is not retried until the tag moves or a manual update', async () => {
   const tracked = fakeRow('tracked', { imageAutoUpdate: true });
   let fail = true;
   const { svc, restarts } = service([tracked], async () => {
@@ -322,11 +322,16 @@ test('a failed auto-update restart is checked again and retried on the next swee
   assert.deepEqual(restarts, ['tracked']);
   assert.equal(tracked.imageAttemptedDigest, null);
   assert.match(tracked.imageCheckError ?? '', /^restart_failed: quota exceeded/);
-  assert.equal(tracked.imageCheckedAt, null);
-  fail = false;
   await svc.sweep();
+  tracked.imageCheckedAt = new Date(0);
+  await svc.sweep();
+  assert.deepEqual(restarts, ['tracked']);
+  const status = await svc.status('tracked');
+  assert.match(status.error ?? '', /^restart_failed/);
+  fail = false;
+  await svc.updateNow('tracked', 'user');
   assert.deepEqual(restarts, ['tracked', 'tracked']);
-  assert.equal(tracked.imageAttemptedDigest, NEW);
+  assert.equal(tracked.imageCheckError, null);
 });
 
 test('a check that keeps failing moves to the back of the sweep', async () => {

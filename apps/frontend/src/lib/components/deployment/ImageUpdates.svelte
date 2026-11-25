@@ -154,6 +154,8 @@
 		Start the app to check for a newer image
 	{:else if status?.pending}
 		Rolling out {short(status.latestDigest)}, checking the pods shortly
+	{:else if status?.error?.startsWith('restart_failed')}
+		Couldn't restart on {short(status.latestDigest)}, auto-update waits for a new push or Update now
 	{:else if status?.error && !status.latestDigest}
 		Couldn't check: {failure(status.error)}
 	{:else if status?.updateAvailable}

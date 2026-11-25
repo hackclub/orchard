@@ -281,6 +281,10 @@ export class ImageUpdatesService {
         : sameImage
           ? row.imageRunningDigest
           : null;
+    const restartFailed =
+      sameImage &&
+      row.imageCheckError?.startsWith('restart_failed') &&
+      latestDigest === row.imageLatestDigest;
     const written = await this.prisma.deployment.updateMany({
       where: { id: row.id, imageUpdatedAt: row.imageUpdatedAt },
       data: {
@@ -288,7 +292,11 @@ export class ImageUpdatesService {
         imageLatestDigest: latestDigest,
         imageRunningDigest: runningDigest,
         imageCheckedAt: new Date(),
-        imageCheckError: latest ? null : clipError(failure ?? 'unknown'),
+        imageCheckError: restartFailed
+          ? row.imageCheckError
+          : latest
+            ? null
+            : clipError(failure ?? 'unknown'),
         ...(!sameImage && { imageAttemptedDigest: null })
       }
     });
@@ -339,7 +347,7 @@ export class ImageUpdatesService {
           },
           data: {
             imageAttemptedDigest: row.imageAttemptedDigest ?? null,
-            imageCheckedAt: null,
+            imageCheckedAt: new Date(),
             imageCheckError: clipError(`restart_failed: ${String((err as any)?.message ?? err)}`)
           }
         })
@@ -348,7 +356,7 @@ export class ImageUpdatesService {
     }
     const updated = (await this.prisma.deployment.update({
       where: { id: row.id },
-      data: { imageUpdatedAt: new Date(), imageCheckedAt: null },
+      data: { imageUpdatedAt: new Date(), imageCheckedAt: null, imageCheckError: null },
       select: ROW_SELECT
     })) as Row;
     void this.log(row, 'deployment.image.pulled', userId, {
