@@ -78,6 +78,7 @@ export function shouldAutoUpdate(row: ImageUpdateRow): boolean {
   return (
     row.imageAutoUpdate &&
     isUpdateAvailable(row) &&
+    !row.imageCheckError?.startsWith('restart_failed') &&
     row.imageAttemptedDigest !== row.imageLatestDigest
   );
 }

@@ -331,9 +331,16 @@ export class ImageUpdatesService {
       );
     } catch (err) {
       await this.prisma.deployment
-        .update({
-          where: { id: row.id },
-          data: { imageAttemptedDigest: row.imageAttemptedDigest ?? null }
+        .updateMany({
+          where: {
+            id: row.id,
+            image: row.image,
+            imageAttemptedDigest: row.imageLatestDigest
+          },
+          data: {
+            imageAttemptedDigest: row.imageAttemptedDigest ?? null,
+            imageCheckError: `restart_failed: ${String((err as any)?.message ?? err).slice(0, 180)}`
+          }
         })
         .catch(() => undefined);
       throw err;
