@@ -2082,7 +2082,7 @@ exit $rc`
     // BuildKit cannot read the pusher container's
     // /root/.docker/config.json.
     // Daemon mode pushes from this pod too: the shared daemon holds no registry creds.
-    const pusherImageRef =fullImageName.replace(/^[^/]+/, this.pusherRegistryHost);
+    const pusherImageRef = fullImageName.replace(/^[^/]+/, this.pusherRegistryHost);
     const pusherSource = buildWithDepot ? 'oci-archive:/output/image.tar' : 'oci:/output/image';
     const pusherContainer: k8s.V1Container | null =
       (buildkitContainer || buildWithDepot) && this.sidecarPushEnabled
