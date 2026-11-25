@@ -156,11 +156,7 @@ export class ProjectsDoorV1 {
     await own(this, deploymentId);
     return (await deployments(this)).updateDeploymentEnvVars(deploymentId, env, clerkId);
   }
-  async updateDeploymentVolumes(
-    deploymentId: string,
-    volumes: DeploymentVolumes,
-    clerkId: string
-  ) {
+  async updateDeploymentVolumes(deploymentId: string, volumes: DeploymentVolumes, clerkId: string) {
     await own(this, deploymentId);
     return (await deployments(this)).updateDeploymentVolumes(deploymentId, volumes, clerkId);
   }
@@ -172,7 +168,9 @@ export class ProjectsDoorV1 {
   ) {
     const { namespace } = await ownPod(this, deploymentId, podName);
     const { K8sWorkloadService } = await import('../../kubernetes/k8s-workload.service.js');
-    const workload: K8sWorkloadService = state(this).moduleRef.get(K8sWorkloadService, { strict: false });
+    const workload: K8sWorkloadService = state(this).moduleRef.get(K8sWorkloadService, {
+      strict: false
+    });
     return workload.getPodLogs(
       podName,
       namespace,
@@ -348,11 +346,10 @@ export class ProjectsDoorV1 {
   ): Promise<Awaited<ReturnType<AutoIngress>>> {
     requireWrite(this);
     const { IngressService } = await import('../../projects/ingress.service.js');
-    return state(this).moduleRef
-      .get(IngressService, { strict: false })
+    return state(this)
+      .moduleRef.get(IngressService, { strict: false })
       .createAutoIngressForDeployment(...args);
   }
-
 }
 
 function requireWrite(door: ProjectsDoorV1): void {
@@ -363,7 +360,10 @@ function requireWrite(door: ProjectsDoorV1): void {
   }
 }
 
-async function own(door: ProjectsDoorV1, deploymentId: string): Promise<{ id: string; namespace: string }> {
+async function own(
+  door: ProjectsDoorV1,
+  deploymentId: string
+): Promise<{ id: string; namespace: string }> {
   const deployment = await state(door).prisma.deployment.findUnique({
     where: { id: deploymentId },
     select: { id: true, namespace: true, createdByGraft: true }
@@ -374,7 +374,11 @@ async function own(door: ProjectsDoorV1, deploymentId: string): Promise<{ id: st
   return deployment;
 }
 
-async function ownPod(door: ProjectsDoorV1, deploymentId: string, podName: string): Promise<{ namespace: string }> {
+async function ownPod(
+  door: ProjectsDoorV1,
+  deploymentId: string,
+  podName: string
+): Promise<{ namespace: string }> {
   const { namespace } = await own(door, deploymentId);
   const pod = await state(door).prisma.k8sObject.findFirst({
     where: { kind: 'Pod', deploymentId, namespace, name: podName },
@@ -398,7 +402,8 @@ async function firstContainer(kc: k8s.KubeConfig, namespace: string, pod: string
   return name;
 }
 
-async function runExec(door: ProjectsDoorV1, 
+async function runExec(
+  door: ProjectsDoorV1,
   namespace: string,
   pod: string,
   cmd: string[],
@@ -430,6 +435,7 @@ async function runExec(door: ProjectsDoorV1,
   return new Promise<PodExecResult>((resolve, reject) => {
     let socket: { close(): void } | undefined;
     let settled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const fail = (e: Error) => {
       if (settled) return;
       settled = true;
@@ -437,10 +443,7 @@ async function runExec(door: ProjectsDoorV1,
       socket?.close();
       reject(e);
     };
-    const timer = setTimeout(
-      () => fail(new Error(`exec timed out after ${timeoutMs}ms`)),
-      timeoutMs
-    );
+    timer = setTimeout(() => fail(new Error(`exec timed out after ${timeoutMs}ms`)), timeoutMs);
     new k8s.Exec(kc)
       .exec(namespace, pod, container, cmd, collect(out), collect(err), stdin, false, (status) => {
         if (settled) return;
