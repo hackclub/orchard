@@ -339,6 +339,7 @@ export class ImageUpdatesService {
           },
           data: {
             imageAttemptedDigest: row.imageAttemptedDigest ?? null,
+            imageCheckedAt: null,
             imageCheckError: clipError(`restart_failed: ${String((err as any)?.message ?? err)}`)
           }
         })
