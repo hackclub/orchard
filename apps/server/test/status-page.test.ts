@@ -291,3 +291,77 @@ test('a busy month keeps the newest pod transitions, so a fresh outage still sho
   assert.equal(Date.parse(page!.incidents[0].startedAt), now - 3 * 3_600_000);
   assert.notEqual(page!.components[0].days.at(-1)?.status, 'operational');
 });
+
+test('a page created empty renders once 10 components are added', async () => {
+  const ids = Array.from({ length: 10 }, (_, i) => `d000000${i}-0000-0000-0000-000000000000`);
+  const now = Date.now();
+  let row: Record<string, any> | null = null;
+  const none = async () => [];
+  const db: Record<string, any> = {
+    statusPage: {
+      count: async () => 0,
+      findUnique: async ({ where }: { where: { slug?: string } }) =>
+        row && where.slug === row.slug ? { ...row, organization: { name: 'Acme' } } : null,
+      findFirst: async () => row,
+      findUniqueOrThrow: async () => row,
+      create: async ({ data }: { data: Record<string, any> }) => {
+        row = {
+          id: 'p1',
+          organizationId: 'o1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ...data
+        };
+        return row;
+      },
+      update: async ({ data }: { data: Record<string, any> }) => Object.assign(row!, data)
+    },
+    organization: { findUnique: async () => ({ name: 'Acme', slug: 'acme' }) },
+    instanceHost: { findFirst: async () => null },
+    deployment: {
+      findMany: async () =>
+        ids.map((id, i) => ({
+          id,
+          name: `app-${i}`,
+          displayName: null,
+          status: 'running',
+          stopped: false,
+          replicas: 1
+        }))
+    },
+    database: { findMany: none },
+    k8sWorkload: {
+      findMany: async () =>
+        ids.map((id) => ({ deploymentId: id, specReplicas: 1, readyReplicas: 1 }))
+    },
+    deploymentCrashState: { findMany: none },
+    metricAlertState: { findMany: none },
+    podTransition: {
+      findMany: async () =>
+        ids.slice(0, 4).flatMap((id, i) => [
+          { deploymentId: id, podName: `p${i}`, toStatus: 'ready', at: new Date(now - 60_000) },
+          {
+            deploymentId: id,
+            podName: `p${i}`,
+            toStatus: 'crashing',
+            at: new Date(now - 3_600_000)
+          }
+        ])
+    },
+    databaseCrashState: { findMany: none }
+  };
+  const prisma = { ...db, $transaction: async (fn: (tx: unknown) => unknown) => fn(db) };
+  const audit = { log: async () => undefined, diff: () => ({}) };
+  const service = new StatusPagesService(prisma as any, {} as any, audit as any);
+  await service.create('o1', { slug: 'acme', components: [] }, actor as any);
+  assert.equal((await service.render('acme'))!.components.length, 0);
+  await service.update(
+    'o1',
+    'p1',
+    { components: ids.map((resourceId) => ({ kind: 'deployment', resourceId })) },
+    actor as any
+  );
+  const page = await service.render('acme');
+  assert.equal(page!.components.length, 10);
+  assert.equal(page!.incidents.length, 4);
+});
