@@ -143,14 +143,19 @@ test('a request that never answers times out and is retried instead of wedging t
 			init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
 		});
 	}) as unknown as typeof globalThis.fetch;
-	const result = await loadStatusPage('/x', {
-		fetch,
-		sleep: async () => {},
-		delays: [1, 1],
-		timeoutMs: 20
-	});
-	assert.equal(result.kind, 'ok');
-	assert.equal(calls, 3);
+	const keepAlive = setInterval(() => {}, 1000);
+	try {
+		const result = await loadStatusPage('/x', {
+			fetch,
+			sleep: async () => {},
+			delays: [1, 1],
+			timeoutMs: 20
+		});
+		assert.equal(result.kind, 'ok');
+		assert.equal(calls, 3);
+	} finally {
+		clearInterval(keepAlive);
+	}
 });
 
 test('a 200 with a body that is not json is retried like an outage', async () => {
