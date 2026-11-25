@@ -85,3 +85,67 @@ export function durationLabel(startedAt: string, endedAt: string | null, now: nu
 export function uptimeLabel(pct: number): string {
 	return pct >= 99.995 ? '100%' : `${pct.toFixed(2)}%`;
 }
+
+export const STATUS_UNREACHABLE = "Couldn't reach the status service, retrying…";
+export const STATUS_FAILING = 'The status service had a problem, retrying…';
+export const STATUS_MISSING = 'There is no status page here.';
+export const STATUS_RETRY_DELAYS_MS = [1_000, 3_000];
+export const STATUS_ATTEMPT_TIMEOUT_MS = 10_000;
+
+export class StatusHttpError extends Error {
+	constructor(readonly status: number) {
+		super(`status ${status}`);
+	}
+}
+
+export type StatusLoadResult =
+	| { kind: 'ok'; page: PublicStatusPage }
+	| { kind: 'missing' }
+	| { kind: 'failed'; message: string };
+
+export function isTransientStatusError(e: unknown): boolean {
+	if (!(e instanceof StatusHttpError)) return true;
+	return e.status >= 500 || e.status === 429;
+}
+
+function isUnreachable(e: unknown): boolean {
+	if (e instanceof TypeError) return true;
+	const name = (e as { name?: unknown } | null)?.name;
+	return name === 'TimeoutError' || name === 'AbortError';
+}
+
+export function statusErrorMessage(e: unknown): string {
+	return isUnreachable(e) ? STATUS_UNREACHABLE : STATUS_FAILING;
+}
+
+export async function loadStatusPage(
+	url: string,
+	opts: {
+		fetch?: typeof fetch;
+		sleep?: (ms: number) => Promise<void>;
+		delays?: readonly number[];
+		timeoutMs?: number;
+	} = {}
+): Promise<StatusLoadResult> {
+	const doFetch = opts.fetch ?? fetch;
+	const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+	const delays = opts.delays ?? STATUS_RETRY_DELAYS_MS;
+	const timeoutMs = opts.timeoutMs ?? STATUS_ATTEMPT_TIMEOUT_MS;
+	let last: unknown;
+	for (let attempt = 0; attempt <= delays.length; attempt++) {
+		try {
+			const res = await doFetch(url, {
+				credentials: 'omit',
+				signal: AbortSignal.timeout(timeoutMs)
+			});
+			if (res.status === 404) return { kind: 'missing' };
+			if (!res.ok) throw new StatusHttpError(res.status);
+			return { kind: 'ok', page: (await res.json()) as PublicStatusPage };
+		} catch (e) {
+			last = e;
+			if (!isTransientStatusError(e) || attempt === delays.length) break;
+			await sleep(delays[attempt]);
+		}
+	}
+	return { kind: 'failed', message: statusErrorMessage(last) };
+}

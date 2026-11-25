@@ -296,7 +296,16 @@ export class StatusPagesService {
   async render(slug: string): Promise<PublicStatusPage | null> {
     const cached = this.cache.get(slug);
     if (cached && Date.now() - cached.at < RENDER_CACHE_MS) return cached.payload;
-    const payload = await this.build(slug);
+    const started = Date.now();
+    let payload: PublicStatusPage | null;
+    try {
+      payload = await this.build(slug);
+    } catch (error) {
+      this.logger.error(
+        `status page ${JSON.stringify(slug)} failed after ${Date.now() - started}ms: ${(error as Error)?.message ?? error}`
+      );
+      throw error;
+    }
     this.cache.set(slug, { at: Date.now(), payload });
     if (this.cache.size > 500) {
       const oldest = [...this.cache.entries()].sort((a, b) => a[1].at - b[1].at)[0];
@@ -351,7 +360,7 @@ export class StatusPagesService {
             toStatus: { in: ['crashing', 'failed', 'ready'] }
           },
           select: { deploymentId: true, podName: true, toStatus: true, at: true },
-          orderBy: { at: 'asc' },
+          orderBy: { at: 'desc' },
           take: 5000
         }),
         this.prisma.database.findMany({

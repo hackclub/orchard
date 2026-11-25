@@ -228,3 +228,66 @@ test('a page saved with a short slug can still be edited without renaming it', a
   assert.equal(out.slug, 'a');
   assert.equal(page.title, 'New title');
 });
+
+test('a busy month keeps the newest pod transitions, so a fresh outage still shows', async () => {
+  const deploymentId = 'd0000000-0000-0000-0000-000000000001';
+  const now = Date.now();
+  const transitions = [];
+  for (let i = 0; i < 6000; i++) {
+    transitions.push({
+      deploymentId,
+      podName: 'web-1',
+      toStatus: i % 2 ? 'ready' : 'crashing',
+      at: new Date(now - 29 * 24 * 3_600_000 + i * 1_000)
+    });
+  }
+  transitions.push({
+    deploymentId,
+    podName: 'web-1',
+    toStatus: 'crashing',
+    at: new Date(now - 3 * 3_600_000)
+  });
+  const none = async () => [];
+  const prisma = {
+    statusPage: {
+      findUnique: async () => ({
+        slug: 'acme',
+        title: 'Acme',
+        description: null,
+        isPublic: true,
+        organizationId: 'org',
+        organization: { name: 'Acme' },
+        components: [{ kind: 'deployment', resourceId: deploymentId }]
+      })
+    },
+    deployment: {
+      findMany: async () => [
+        {
+          id: deploymentId,
+          name: 'web',
+          displayName: null,
+          status: 'running',
+          stopped: false,
+          replicas: 1
+        }
+      ]
+    },
+    podTransition: {
+      findMany: async (args: { orderBy: { at: 'asc' | 'desc' }; take: number }) => {
+        const dir = args.orderBy.at === 'desc' ? -1 : 1;
+        return [...transitions]
+          .sort((a, b) => dir * (a.at.getTime() - b.at.getTime()))
+          .slice(0, args.take);
+      }
+    },
+    k8sWorkload: { findMany: none },
+    deploymentCrashState: { findMany: none },
+    metricAlertState: { findMany: none },
+    database: { findMany: none },
+    databaseCrashState: { findMany: none }
+  };
+  const service = new StatusPagesService(prisma as any, {} as any, {} as any);
+  const page = await service.render('acme');
+  assert.equal(Date.parse(page!.incidents[0].startedAt), now - 3 * 3_600_000);
+  assert.notEqual(page!.components[0].days.at(-1)?.status, 'operational');
+});

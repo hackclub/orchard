@@ -9,7 +9,9 @@
 	import {
 		componentCopy,
 		durationLabel,
+		loadStatusPage,
 		overallCopy,
+		STATUS_MISSING,
 		statusApiUrl,
 		uptimeLabel,
 		type PublicStatusPage
@@ -21,7 +23,11 @@
 	let error = $state<string | null>(null);
 	let now = $state(Date.now());
 
+	let inFlight = false;
+
 	async function load() {
+		if (inFlight) return;
+		inFlight = true;
 		try {
 			const url = statusApiUrl(
 				data.slug,
@@ -29,26 +35,40 @@
 				env.PUBLIC_BASE_DOMAIN || '',
 				env.PUBLIC_PLATFORM_ORIGIN || ''
 			);
-			const res = await fetch(url, { credentials: 'omit' });
-			if (res.status === 404) {
-				error = 'There is no status page here.';
-				return;
+			const result = await loadStatusPage(url);
+			if (result.kind === 'ok') {
+				page = result.page;
+				error = null;
+				now = Date.now();
+			} else if (result.kind === 'missing') {
+				page = null;
+				error = STATUS_MISSING;
+			} else if (!page) {
+				error = result.message;
 			}
-			if (!res.ok) throw new Error(`status ${res.status}`);
-			page = (await res.json()) as PublicStatusPage;
-			error = null;
-			now = Date.now();
-		} catch (e) {
-			if (!page) error = e instanceof Error ? e.message : "Couldn't load this page";
+		} finally {
+			inFlight = false;
 		}
 	}
 
 	onMount(() => {
 		void load();
 		const timer = setInterval(() => {
-			load();
+			void load();
 		}, 30_000);
-		return () => clearInterval(timer);
+		const onVisible = () => {
+			if (document.visibilityState === 'visible') void load();
+		};
+		const onOnline = () => {
+			void load();
+		};
+		document.addEventListener('visibilitychange', onVisible);
+		window.addEventListener('online', onOnline);
+		return () => {
+			clearInterval(timer);
+			document.removeEventListener('visibilitychange', onVisible);
+			window.removeEventListener('online', onOnline);
+		};
 	});
 
 	const overall = $derived(page ? overallCopy(page.overall) : null);
