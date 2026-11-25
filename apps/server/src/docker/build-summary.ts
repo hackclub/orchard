@@ -4,6 +4,16 @@ import {
   ROOTLESS_UNSUPPORTED_MARKER
 } from './build-posture';
 
+const DISK_FULL_RE = /no space left on device|low on resource: ephemeral-storage/i;
+
+export const DISK_FULL_HINT =
+  'The build node ran out of disk space. Free some on the node, for example by pruning the build cache under Admin > Build cache, or give it a larger disk, then redeploy.';
+
+const REGISTRY_SERVER_ERROR_RE = /unexpected HTTP status: 5\d\d/;
+
+export const REGISTRY_SERVER_ERROR_HINT =
+  'The image registry failed while storing the image. The most common cause is the registry running out of disk; its own logs name the cause.';
+
 const ENTITLEMENT_RE =
   /(security\.insecure|network\.host)[^\n]*not allowed|not allowed[^\n]*(security\.insecure|network\.host)|insecure entitlement/i;
 
@@ -30,6 +40,8 @@ export function summarizeBuildFailure(logs?: string | null, pusherLogs?: string 
 
   if ((logs ?? '').includes(ROOTLESS_UNSUPPORTED_MARKER)) parts.push(ROOTLESS_UNSUPPORTED_HINT);
   if (ENTITLEMENT_RE.test(logs ?? '')) parts.push(ENTITLEMENT_HINT);
+  if (DISK_FULL_RE.test(`${logs ?? ''}\n${pusherLogs ?? ''}`)) parts.push(DISK_FULL_HINT);
+  else if (REGISTRY_SERVER_ERROR_RE.test(pusherLogs ?? '')) parts.push(REGISTRY_SERVER_ERROR_HINT);
 
   const lines = (logs ?? '').split('\n');
   const solveError = lines.filter((l) => l.startsWith('error: failed to solve:')).pop();

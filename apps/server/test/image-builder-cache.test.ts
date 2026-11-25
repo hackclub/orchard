@@ -169,7 +169,10 @@ if (process.env.FAIL_BUILD === 'true' && outputAt !== -1) process.exit(23);
 if (process.env.FAIL_CACHE === 'true' && outputAt === -1) process.exit(42);
 if (outputAt !== -1) {
   const dest = args[outputAt + 1].match(/(?:^|,)dest=([^,]+)/)?.[1];
-  if (dest) fs.writeFileSync(dest, 'test-image');
+  if (dest && /(?:^|,)tar=false(?:,|$)/.test(args[outputAt + 1])) {
+    fs.mkdirSync(dest, { recursive: true });
+    fs.writeFileSync(dest + '/index.json', '{}');
+  } else if (dest) fs.writeFileSync(dest, 'test-image');
 }
 const exportAt = args.indexOf('--export-cache');
 if (exportAt !== -1 && args[exportAt + 1].startsWith('type=local,')) {
@@ -273,12 +276,33 @@ for (const sourceCpuLimit of [undefined, '500m']) {
   }
 }
 
+test('the pusher pushes the OCI layout in place instead of untarring an archive', async (t) => {
+  const generated = await createJob(t);
+  const pod = generated.job.spec!.template.spec!;
+  const pusher = pod.containers.find((container) => container.name === 'pusher')!;
+  const script = pusher.args![0];
+  assert.match(script, /skopeo copy --retry-times 3 .* oci:\/output\/image '/);
+  assert.doesNotMatch(script, /oci-archive:/);
+  const execution = executeBuilder(t, generated);
+  assert.match(values(execution.calls[0], '--output')[0], /,dest=[^,]*\/output\/image,tar=false,/);
+  assert.ok(existsSync(join(execution.output, 'image', 'index.json')));
+});
+
+test('Super Builds still push the tarball Depot writes', async (t) => {
+  const generated = await createJob(t, { daemon: 'absent', build: { buildWithDepot: true } });
+  const pusher = generated.job.spec!.template.spec!.containers.find((c) => c.name === 'pusher')!;
+  assert.match(
+    pusher.args![0],
+    /skopeo copy --retry-times 3 .* oci-archive:\/output\/image\.tar '/
+  );
+});
+
 test('local sidecar build exports its image and reusable cache in a single solve', async (t) => {
   const generated = await createJob(t);
   const execution = executeBuilder(t, generated);
   assert.equal(execution.result.status, 0, execution.result.stderr);
   assert.equal(execution.calls.length, 1);
-  assert.ok(existsSync(join(execution.output, 'image.tar')));
+  assert.ok(existsSync(join(execution.output, 'image', 'index.json')));
   assert.ok(existsSync(join(execution.output, '.done')));
   assert.ok(existsSync(join(execution.cache, 'rails-app', 'index.json')));
   assert.deepEqual(
@@ -401,7 +425,7 @@ test('deferred cache failure preserves the successful image and exit status', as
   assert.equal(execution.result.status, 0, execution.result.stderr);
   assert.match(execution.result.stdout, /Cache export failed \(non-critical\)/);
   assert.ok(existsSync(join(execution.output, '.done')));
-  assert.ok(existsSync(join(execution.output, 'image.tar')));
+  assert.ok(existsSync(join(execution.output, 'image', 'index.json')));
 });
 
 test('build failure never starts deferred export or releases the pusher', async (t) => {

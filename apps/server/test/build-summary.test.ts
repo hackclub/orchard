@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { summarizeBuildFailure } from '../src/docker/build-summary';
+import {
+  DISK_FULL_HINT,
+  REGISTRY_SERVER_ERROR_HINT,
+  summarizeBuildFailure
+} from '../src/docker/build-summary';
 
 const craftFailure = [
   '#22 0.413 > craft@0.0.1 build /app',
@@ -63,4 +67,30 @@ test('the summary stays short enough for a headline', () => {
 
 test('empty logs do not throw', () => {
   assert.equal(typeof summarizeBuildFailure(null, null), 'string');
+});
+
+test('a pusher that runs out of disk says so', () => {
+  const summary = summarizeBuildFailure(
+    'Build job failed with the following reasons:\nContainer pusher terminated: Error - exit code 1\n\n',
+    'time="2026-11-25T01:35:14Z" level=fatal msg="initializing source oci:/output/image: write /var/tmp/x: no space left on device"'
+  );
+  assert.ok(summary.startsWith(DISK_FULL_HINT));
+  assert.match(summary, /Pusher: .*no space left on device/);
+});
+
+test('a build pod evicted for disk pressure names the cause', () => {
+  const summary = summarizeBuildFailure(
+    'Build job failed with the following reasons:\nPod Evicted: The node was low on resource: ephemeral-storage. Threshold quantity: 1Gi, available: 512Mi.\nContainer pusher terminated: Error - exit code 137\n\n'
+  );
+  assert.ok(summary.includes(DISK_FULL_HINT));
+  assert.match(summary, /Pod Evicted: The node was low on resource: ephemeral-storage/);
+});
+
+test('a registry 500 during push points at the registry', () => {
+  const summary = summarizeBuildFailure(
+    '',
+    'time="2026-11-25T01:49:20Z" level=fatal msg="writing blob: uploading layer chunked: received unexpected HTTP status: 500 Internal Server Error"'
+  );
+  assert.ok(summary.startsWith(REGISTRY_SERVER_ERROR_HINT));
+  assert.match(summary, /Pusher: .*500 Internal Server Error/);
 });

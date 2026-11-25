@@ -2064,8 +2064,8 @@ exit $rc`
         })();
 
     // Pusher container, only used when sidecarPushEnabled. Polls for a
-    // done-marker written by BuildKit, then `skopeo copy`s the OCI
-    // tarball to Harbor.
+    // done-marker written by BuildKit, then `skopeo copy`s the OCI layout
+    // (Depot still writes a tarball) to the registry.
     //
     // Why run BuildKit + pusher as PARALLEL main containers (not init→main):
     //   Under runtimeClassName=kata, transitioning from the last init
@@ -2082,6 +2082,7 @@ exit $rc`
     // /root/.docker/config.json.
     // Daemon mode pushes from this pod too: the shared daemon holds no registry creds.
     const pusherImageRef = fullImageName.replace(/^[^/]+/, this.pusherRegistryHost);
+    const pusherSource = buildWithDepot ? 'oci-archive:/output/image.tar' : 'oci:/output/image';
     const pusherContainer: k8s.V1Container | null =
       (buildkitContainer || buildWithDepot) && this.sidecarPushEnabled
         ? {
@@ -2107,7 +2108,7 @@ if [ -f /output/.failed ]; then
   exit 1
 fi
 echo "[pusher] build done, pushing..."
-exec skopeo copy --authfile /root/.docker/config.json --dest-tls-verify=false oci-archive:/output/image.tar 'docker://${pusherImageRef.replace(/'/g, `'\\''`)}'`
+exec skopeo copy --retry-times 3 --authfile /root/.docker/config.json --dest-tls-verify=false ${pusherSource} 'docker://${pusherImageRef.replace(/'/g, `'\\''`)}'`
             ],
             volumeMounts: [
               { name: 'output', mountPath: '/output' },
@@ -2735,15 +2736,15 @@ fi
 
     // Output mode:
     //   - Persistent daemon: with sidecar push the client receives the OCI
-    //     tarball and its pusher container pushes; without it the daemon
+    //     layout and its pusher container pushes; without it the daemon
     //     pushes directly.
-    //   - sidecarPushEnabled: write OCI tarball to /output for the pusher
+    //   - sidecarPushEnabled: write an OCI layout to /output for the pusher
     //     sidecar container.
     //   - Default: push directly from BuildKit.
     if (this.sidecarPushEnabled && (!options.skipCache || options.daemonClient)) {
       args.push(
         '--output',
-        `type=oci,"name=${fullImageName}",dest=/output/image.tar,compression=zstd,oci-mediatypes=true`
+        `type=oci,"name=${fullImageName}",dest=/output/image,tar=false,compression=zstd,oci-mediatypes=true`
       );
     } else {
       args.push(
@@ -2804,7 +2805,7 @@ fi
     if (this.sidecarPushEnabled && (!options.skipCache || options.daemonClient)) {
       args.push(
         '--output',
-        `type=oci,"name=${fullImageName}",dest=/output/image.tar,compression=zstd,oci-mediatypes=true`
+        `type=oci,"name=${fullImageName}",dest=/output/image,tar=false,compression=zstd,oci-mediatypes=true`
       );
     } else {
       args.push(
@@ -3192,6 +3193,12 @@ fi
 
           if (status === 'failed' || podPhase === 'Failed') {
             const failureReasons: string[] = [];
+
+            if (pod.status?.reason) {
+              failureReasons.push(
+                `Pod ${pod.status.reason}: ${pod.status.message || 'No message'}`
+              );
+            }
 
             if (containerStatuses) {
               for (const cs of containerStatuses) {
