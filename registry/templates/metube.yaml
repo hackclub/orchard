@@ -5,7 +5,7 @@ metadata:
   displayName: 'MeTube'
   description: 'A web UI for yt-dlp. Paste a link, get the video or audio into a volume.'
   icon: none
-  version: '1.1.0'
+  version: '1.1.1'
   category: media
   tags: ['downloads', 'youtube', 'yt-dlp']
   keywords: ['youtube downloader', 'video download', 'mp3']
@@ -70,7 +70,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: ghcr.io/alexta69/metube:latest
+      image: ghcr.io/alexta69/metube:2026.11.24
       replicas: 1
       ports:
         - name: http

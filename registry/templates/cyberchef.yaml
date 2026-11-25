@@ -5,7 +5,7 @@ metadata:
   displayName: 'CyberChef'
   description: 'The cyber Swiss army knife. Encode, decode, compress, hash and analyse data in the browser.'
   icon: https://github.com/gchq.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: developer
   tags: ['tools', 'security', 'static']
   keywords: ['decoder', 'base64', 'crypto', 'forensics', 'gchq']
@@ -39,7 +39,7 @@ resources:
       resources:
         cpu: 100m
         memory: 128Mi
-      image: ghcr.io/gchq/cyberchef:latest
+      image: ghcr.io/gchq/cyberchef:11
       replicas: 1
       ports:
         - name: http

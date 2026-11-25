@@ -75,7 +75,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: getmeili/meilisearch:v1.13
+      image: getmeili/meilisearch:v1.58
       replicas: 1
       ports:
         - name: http

@@ -5,7 +5,7 @@ metadata:
   displayName: 'listmonk'
   description: 'Newsletters and mailing lists with campaigns, templates and subscriber management.'
   icon: mail
-  version: '1.1.0'
+  version: '1.1.1'
   category: marketing
   tags: ['newsletter', 'email', 'mailing list', 'campaigns']
   keywords: ['mailchimp', 'sendy', 'subscribers', 'transactional', 'smtp']
@@ -63,7 +63,7 @@ resources:
       resources:
         cpu: 250m
         memory: 256Mi
-      image: listmonk/listmonk:latest
+      image: listmonk/listmonk:v6.2.0
       replicas: 1
       ports:
         - name: http

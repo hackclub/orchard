@@ -5,7 +5,7 @@ metadata:
   displayName: 'Syncthing'
   description: 'Continuous file sync between your devices, no cloud in the middle. The sync port is published so devices outside can reach it.'
   icon: https://github.com/syncthing.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: files
   tags: ['sync', 'files', 'p2p']
   keywords: ['dropbox alternative', 'file sync', 'backup', 'resilio']
@@ -45,7 +45,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: lscr.io/linuxserver/syncthing:latest
+      image: lscr.io/linuxserver/syncthing:version-v2.1.7
       replicas: 1
       ports:
         - name: http

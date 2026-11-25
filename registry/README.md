@@ -11,7 +11,8 @@ merged template shows up in the hosted instance and in self-hosted ones alike.
    match `metadata.name`. `metadata.version` is required and must be a semantic
    version. Add `metadata.author` with your GitHub login so the gallery credits
    you, `metadata.keywords` for search, and `metadata.homepage` if the software
-   has one.
+   has one. Deployment images must pin a version or a floating major tag
+   (`gotify/server:3`), not `latest` or no tag.
 2. Optionally add `registry/templates/<name>.md` (a README rendered on the
    template's page) and `registry/templates/<name>.png` (a 1200x675 preview
    shown in the gallery). Sidecars are matched by name across every template

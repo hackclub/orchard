@@ -5,7 +5,7 @@ metadata:
   displayName: 'Jellyfin'
   description: 'A media server for your movies, shows and music, with apps for every screen.'
   icon: https://github.com/jellyfin.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: media
   tags: ['media', 'video', 'streaming']
   keywords: ['plex', 'emby', 'movies', 'tv shows', 'home media']
@@ -44,7 +44,7 @@ resources:
       resources:
         cpu: 2000m
         memory: 2Gi
-      image: jellyfin/jellyfin:latest
+      image: jellyfin/jellyfin:12
       replicas: 1
       ports:
         - name: http

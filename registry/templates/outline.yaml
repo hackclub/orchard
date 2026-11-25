@@ -5,7 +5,7 @@ metadata:
   displayName: 'Outline'
   description: 'A team wiki with a fast editor. Needs an OpenID Connect provider to sign in, so pair it with Keycloak.'
   icon: https://github.com/outline.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: docs
   tags: ['wiki', 'docs', 'knowledge base', 'oidc']
   keywords: ['notion', 'confluence', 'documentation', 'team wiki', 'markdown']
@@ -207,7 +207,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: outlinewiki/outline:latest
+      image: outlinewiki/outline:1.13
       replicas: 1
       ports:
         - name: http

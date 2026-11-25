@@ -5,7 +5,7 @@ metadata:
   displayName: 'Excalidraw'
   description: 'A whiteboard with a hand-drawn feel. No accounts, drawings stay in the browser.'
   icon: https://github.com/excalidraw.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: developer
   tags: ['whiteboard', 'diagrams', 'static']
   keywords: ['sketch', 'drawing', 'wireframe', 'diagram tool']
@@ -39,7 +39,7 @@ resources:
       resources:
         cpu: 100m
         memory: 128Mi
-      image: excalidraw/excalidraw:latest
+      image: excalidraw/excalidraw@sha256:f7ee194addd607bf831d2af0f0a34463dd4225e426cf35199ef0b12a803398e9
       replicas: 1
       ports:
         - name: http

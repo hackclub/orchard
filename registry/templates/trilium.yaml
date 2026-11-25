@@ -5,7 +5,7 @@ metadata:
   displayName: 'Trilium Notes'
   description: 'A hierarchical note-taking app with a rich editor, scripting and sync for the desktop client.'
   icon: https://github.com/TriliumNext.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: docs
   tags: ['notes', 'knowledge base']
   keywords: ['obsidian', 'evernote', 'personal wiki', 'note taking']
@@ -44,7 +44,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: triliumnext/notes:latest
+      image: triliumnext/notes:stable
       replicas: 1
       ports:
         - name: http

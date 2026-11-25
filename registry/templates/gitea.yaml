@@ -5,7 +5,7 @@ metadata:
   displayName: 'Gitea'
   description: 'A lightweight self-hosted Git service with issues, pull requests and CI.'
   icon: https://github.com/go-gitea.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: developer
   tags: ['git', 'code hosting', 'ci', 'issues']
   keywords: ['github alternative', 'gitlab', 'forgejo', 'repositories', 'actions']
@@ -102,7 +102,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: gitea/gitea:1.22
+      image: gitea/gitea:1
       replicas: 1
       ports:
         - name: http

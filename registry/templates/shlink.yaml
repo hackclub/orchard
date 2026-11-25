@@ -5,7 +5,7 @@ metadata:
   displayName: 'Shlink'
   description: 'A URL shortener with an API, QR codes and visit stats. Bring your own short domain.'
   icon: https://github.com/shlinkio.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: marketing
   tags: ['url shortener', 'links', 'api']
   keywords: ['bitly', 'short links', 'qr code', 'redirects']
@@ -71,7 +71,7 @@ resources:
       resources:
         cpu: 250m
         memory: 512Mi
-      image: shlinkio/shlink:stable
+      image: shlinkio/shlink:5
       replicas: 1
       ports:
         - name: http

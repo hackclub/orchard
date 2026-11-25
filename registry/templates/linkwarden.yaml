@@ -5,7 +5,7 @@ metadata:
   displayName: 'Linkwarden'
   description: 'Collect, organise and archive links, with full-page snapshots and collaborative collections.'
   icon: https://github.com/linkwarden.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: reader
   tags: ['bookmarks', 'archive', 'links']
   keywords: ['pocket', 'raindrop', 'linkding', 'wayback', 'read later']
@@ -68,7 +68,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 2Gi
-      image: ghcr.io/linkwarden/linkwarden:latest
+      image: ghcr.io/linkwarden/linkwarden:v2.17.0
       replicas: 1
       ports:
         - name: http

@@ -5,7 +5,7 @@ metadata:
   displayName: 'Paperless-ngx'
   description: 'Scan, OCR, tag and search every document you own. Comes with Postgres, Valkey, Tika and Gotenberg so office files work too.'
   icon: https://github.com/paperless-ngx.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: docs
   tags: ['documents', 'ocr', 'archive']
   keywords: ['paperless', 'scanner', 'receipts', 'pdf archive', 'document management']
@@ -109,7 +109,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: apache/tika:latest
+      image: apache/tika:4.2.0
       replicas: 1
       ports:
         - name: http
@@ -140,7 +140,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 2Gi
-      image: ghcr.io/paperless-ngx/paperless-ngx:latest
+      image: ghcr.io/paperless-ngx/paperless-ngx:3.5
       replicas: 1
       ports:
         - name: http

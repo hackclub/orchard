@@ -5,7 +5,7 @@ metadata:
   displayName: 'pgAdmin'
   description: 'The Postgres admin UI. Point it at your managed databases.'
   icon: https://github.com/pgadmin-org.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: developer
   tags: ['postgres', 'database', 'admin']
   keywords: ['sql client', 'dbeaver', 'query editor']
@@ -50,7 +50,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: dpage/pgadmin4:latest
+      image: dpage/pgadmin4:9
       replicas: 1
       ports:
         - name: http

@@ -5,7 +5,7 @@ metadata:
   displayName: 'Automatisch'
   description: 'Open-source Zapier alternative. Connect apps with triggers and actions, no code.'
   icon: https://github.com/automatisch.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: automation
   tags: ['automation', 'workflows', 'integrations']
   keywords: ['zapier', 'n8n', 'triggers', 'actions']
@@ -85,7 +85,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: automatischio/automatisch:latest
+      image: automatischio/automatisch:0.15.0
       replicas: 1
       ports:
         - name: http

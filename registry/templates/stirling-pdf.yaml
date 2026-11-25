@@ -5,7 +5,7 @@ metadata:
   displayName: 'Stirling PDF'
   description: 'Merge, split, compress, sign, OCR and convert PDFs from a web UI.'
   icon: https://github.com/Stirling-Tools.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: developer
   tags: ['pdf', 'tools']
   keywords: ['pdf editor', 'merge pdf', 'ocr', 'compress pdf', 'ilovepdf']
@@ -48,7 +48,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 2Gi
-      image: stirlingtools/stirling-pdf:latest
+      image: stirlingtools/stirling-pdf:3.5.0
       replicas: 1
       ports:
         - name: http

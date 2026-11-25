@@ -5,7 +5,7 @@ metadata:
   displayName: 'Meilisearch'
   description: 'A fast, typo-tolerant search engine with an easy API. Internal-only; front it from your app.'
   icon: https://github.com/meilisearch.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: database
   tags: ['search', 'api']
   keywords: ['algolia', 'typesense', 'full text search', 'elasticsearch alternative']
@@ -41,7 +41,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: getmeili/meilisearch:v1.13
+      image: getmeili/meilisearch:v1.58
       replicas: 1
       ports:
         - name: http

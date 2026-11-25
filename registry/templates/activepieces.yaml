@@ -5,7 +5,7 @@ metadata:
   displayName: 'Activepieces'
   description: 'No-code automation with a huge piece library and an AI agent builder. Postgres and Valkey included.'
   icon: https://github.com/activepieces.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: automation
   tags: ['automation', 'workflows', 'integrations']
   keywords: ['zapier', 'n8n', 'make', 'flows', 'ai agents']
@@ -82,7 +82,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 1Gi
-      image: ghcr.io/activepieces/activepieces:latest
+      image: ghcr.io/activepieces/activepieces:0.93.0
       replicas: 1
       ports:
         - name: http

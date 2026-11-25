@@ -5,7 +5,7 @@ metadata:
   displayName: 'Penpot'
   description: 'Design and prototyping in the browser. Frontend, backend, exporter, Postgres and Valkey wired together; assets go to an S3 bucket such as RustFS.'
   icon: https://github.com/penpot.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: developer
   tags: ['design', 'prototyping', 'figma']
   keywords: ['figma alternative', 'ui design', 'wireframes', 'svg']
@@ -126,7 +126,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 2Gi
-      image: penpotapp/backend:latest
+      image: penpotapp/backend:2.19
       replicas: 1
       ports:
         - name: http
@@ -188,7 +188,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: penpotapp/exporter:latest
+      image: penpotapp/exporter:2.19
       replicas: 1
       ports:
         - name: http
@@ -208,7 +208,7 @@ resources:
       resources:
         cpu: 250m
         memory: 256Mi
-      image: penpotapp/frontend:latest
+      image: penpotapp/frontend:2.19
       replicas: 1
       ports:
         - name: http

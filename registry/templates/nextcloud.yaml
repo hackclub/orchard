@@ -5,7 +5,7 @@ metadata:
   displayName: 'Nextcloud'
   description: 'Files, calendar, contacts and office documents on your own server. Postgres, Valkey and the admin account are wired up for you.'
   icon: https://github.com/nextcloud.png?size=256
-  version: '1.1.0'
+  version: '1.2.0'
   category: files
   tags: ['files', 'sync', 'calendar', 'office']
   keywords: ['google drive', 'dropbox', 'owncloud', 'storage', 'photos', 'webdav']
@@ -116,7 +116,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 1Gi
-      image: nextcloud:30-apache
+      image: nextcloud:35-apache
       replicas: 1
       ports:
         - name: http

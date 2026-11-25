@@ -5,7 +5,7 @@ metadata:
   displayName: 'Twenty CRM'
   description: 'A CRM with the feel of a spreadsheet: people, companies, pipelines, custom objects.'
   icon: https://github.com/twentyhq.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: community
   tags: ['crm', 'sales', 'contacts']
   keywords: ['hubspot', 'salesforce', 'pipedrive', 'customers']
@@ -77,7 +77,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 2Gi
-      image: twentycrm/twenty:latest
+      image: twentycrm/twenty:v2
       replicas: 1
       ports:
         - name: http

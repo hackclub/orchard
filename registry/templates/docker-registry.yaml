@@ -5,7 +5,7 @@ metadata:
   displayName: 'Docker Registry'
   description: 'A private container registry. Put it behind Orchard protection or an auth proxy; the registry itself is open.'
   icon: https://github.com/distribution.png?size=256
-  version: '1.1.0'
+  version: '1.2.0'
   category: developer
   tags: ['docker', 'registry', 'images', 'oci']
   keywords: ['container registry', 'harbor', 'ghcr', 'push images']
@@ -54,7 +54,7 @@ resources:
       resources:
         cpu: 250m
         memory: 256Mi
-      image: registry:2
+      image: registry:3
       replicas: 1
       ports:
         - name: http

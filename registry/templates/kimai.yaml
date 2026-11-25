@@ -5,7 +5,7 @@ metadata:
   displayName: 'Kimai'
   description: 'Time tracking for teams and freelancers, with invoices and reports. Ships with its own MariaDB.'
   icon: https://github.com/kimai.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: finance
   tags: ['time tracking', 'invoices', 'teams']
   keywords: ['toggl', 'harvest', 'timesheets', 'billing']
@@ -93,7 +93,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: kimai/kimai2:apache
+      image: kimai/kimai2:2
       replicas: 1
       ports:
         - name: http

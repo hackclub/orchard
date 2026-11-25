@@ -5,7 +5,7 @@ metadata:
   displayName: 'Forgejo'
   description: 'A community-run Git service with issues, pull requests and Actions. The Codeberg fork of Gitea.'
   icon: https://github.com/forgejo.png?size=256
-  version: '1.1.0'
+  version: '1.2.0'
   category: developer
   tags: ['git', 'code hosting', 'ci', 'codeberg']
   keywords: ['github alternative', 'gitea', 'repositories', 'actions', 'self-hosted git']
@@ -102,7 +102,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: codeberg.org/forgejo/forgejo:9
+      image: codeberg.org/forgejo/forgejo:17
       replicas: 1
       ports:
         - name: http

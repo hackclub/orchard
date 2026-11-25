@@ -5,7 +5,7 @@ metadata:
   displayName: 'Beszel'
   description: 'A lightweight server monitoring hub with historical charts and alerts. Install the agent on each machine.'
   icon: activity
-  version: '1.1.0'
+  version: '1.1.1'
   category: monitoring
   tags: ['monitoring', 'metrics', 'servers']
   keywords: ['netdata', 'grafana lite', 'cpu', 'memory', 'disk usage']
@@ -39,7 +39,7 @@ resources:
       resources:
         cpu: 100m
         memory: 128Mi
-      image: henrygd/beszel:latest
+      image: henrygd/beszel:0.21
       replicas: 1
       ports:
         - name: http

@@ -5,7 +5,7 @@ metadata:
   displayName: 'SilverBullet'
   description: 'A markdown notes app that feels like a programmable notebook. Files on a volume, works offline.'
   icon: https://github.com/silverbulletmd.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: docs
   tags: ['notes', 'markdown']
   keywords: ['obsidian', 'logseq', 'personal wiki', 'plain text']
@@ -55,7 +55,7 @@ resources:
       resources:
         cpu: 250m
         memory: 256Mi
-      image: ghcr.io/silverbulletmd/silverbullet:latest
+      image: ghcr.io/silverbulletmd/silverbullet:3.0.0
       replicas: 1
       ports:
         - name: http

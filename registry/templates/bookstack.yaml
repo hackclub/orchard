@@ -5,7 +5,7 @@ metadata:
   displayName: 'BookStack'
   description: 'A wiki organised as shelves, books, chapters and pages. Ships with its own MariaDB.'
   icon: https://github.com/BookStackApp.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: docs
   tags: ['wiki', 'docs', 'knowledge base']
   keywords: ['confluence', 'documentation', 'manual', 'handbook']
@@ -97,7 +97,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: lscr.io/linuxserver/bookstack:latest
+      image: lscr.io/linuxserver/bookstack:version-v26.09.3
       replicas: 1
       ports:
         - name: http

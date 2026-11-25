@@ -5,7 +5,7 @@ metadata:
   displayName: 'Vaultwarden'
   description: 'A Bitwarden-compatible password server that runs in a few megabytes of RAM.'
   icon: https://raw.githubusercontent.com/dani-garcia/vaultwarden/main/resources/vaultwarden-icon.svg
-  version: '1.1.0'
+  version: '1.1.1'
   category: security
   tags: ['passwords', 'bitwarden', 'secrets', 'vault']
   keywords: ['password manager', '1password', 'lastpass', 'credentials', 'totp']
@@ -116,7 +116,7 @@ resources:
       resources:
         cpu: 250m
         memory: 256Mi
-      image: vaultwarden/server:latest
+      image: vaultwarden/server:1.37.5
       replicas: 1
       ports:
         - name: http

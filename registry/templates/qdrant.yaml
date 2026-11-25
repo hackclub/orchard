@@ -5,7 +5,7 @@ metadata:
   displayName: 'Qdrant'
   description: 'A vector database for embeddings and similarity search. Internal-only.'
   icon: https://github.com/qdrant.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: database
   tags: ['vectors', 'ai', 'search']
   keywords: ['pinecone', 'weaviate', 'pgvector', 'embeddings', 'rag']
@@ -41,7 +41,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 2Gi
-      image: qdrant/qdrant:latest
+      image: qdrant/qdrant:v1.20
       replicas: 1
       ports:
         - name: http

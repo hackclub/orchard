@@ -5,7 +5,7 @@ metadata:
   displayName: 'File Browser'
   description: 'A web file manager over a volume. Upload, download, share links, multiple users.'
   icon: https://github.com/filebrowser.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: files
   tags: ['files', 'file manager']
   keywords: ['nextcloud lite', 'ftp alternative', 'file sharing', 'directory listing']
@@ -44,7 +44,7 @@ resources:
       resources:
         cpu: 100m
         memory: 128Mi
-      image: filebrowser/filebrowser:latest
+      image: filebrowser/filebrowser:v2
       replicas: 1
       ports:
         - name: http

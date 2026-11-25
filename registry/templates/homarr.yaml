@@ -5,7 +5,7 @@ metadata:
   displayName: 'Homarr'
   description: 'A drag-and-drop dashboard for your services with integrations and per-user boards.'
   icon: https://github.com/homarr-labs.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: developer
   tags: ['dashboard', 'start page']
   keywords: ['homepage', 'heimdall', 'dashy', 'launcher']
@@ -46,7 +46,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: ghcr.io/homarr-labs/homarr:latest
+      image: ghcr.io/homarr-labs/homarr:v2
       replicas: 1
       ports:
         - name: http

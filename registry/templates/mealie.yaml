@@ -5,7 +5,7 @@ metadata:
   displayName: 'Mealie'
   description: 'A recipe manager and meal planner that imports from any recipe site.'
   icon: https://github.com/mealie-recipes.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: finance
   tags: ['recipes', 'meal planning', 'household']
   keywords: ['cookbook', 'shopping list', 'paprika', 'tandoor']
@@ -80,7 +80,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: ghcr.io/mealie-recipes/mealie:latest
+      image: ghcr.io/mealie-recipes/mealie:v3.31.0
       replicas: 1
       ports:
         - name: http

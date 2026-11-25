@@ -5,7 +5,7 @@ metadata:
   displayName: 'IT Tools'
   description: 'A hundred small developer utilities on one page: encoders, hashes, converters, generators. No configuration.'
   icon: wrench
-  version: '1.1.0'
+  version: '1.1.1'
   category: developer
   tags: ['tools', 'utilities', 'static']
   keywords: ['base64', 'jwt', 'uuid', 'hash', 'regex', 'converter', 'cyberchef']
@@ -39,7 +39,7 @@ resources:
       resources:
         cpu: 100m
         memory: 128Mi
-      image: corentinth/it-tools:latest
+      image: corentinth/it-tools:2024.10.22-7ca5933
       replicas: 1
       ports:
         - name: http

@@ -5,7 +5,7 @@ metadata:
   displayName: 'Kavita'
   description: 'A reader and library for manga, comics and books, with progress sync and OPDS.'
   icon: https://github.com/Kareadita.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: media
   tags: ['comics', 'manga', 'ebooks']
   keywords: ['komga', 'calibre', 'reader', 'library']
@@ -44,7 +44,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: jvmilazz0/kavita:latest
+      image: jvmilazz0/kavita:0.9.1
       replicas: 1
       ports:
         - name: http

@@ -5,7 +5,7 @@ metadata:
   displayName: 'Umami'
   description: 'Privacy-friendly web analytics. One script tag, no cookies, your own database.'
   icon: https://github.com/umami-software.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: analytics
   tags: ['analytics', 'privacy', 'tracking']
   keywords: ['google analytics alternative', 'plausible', 'page views', 'visitors', 'stats']
@@ -84,7 +84,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: ghcr.io/umami-software/umami:postgresql-latest
+      image: ghcr.io/umami-software/umami:3
       replicas: 1
       ports:
         - name: http

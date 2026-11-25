@@ -5,7 +5,7 @@ metadata:
   displayName: 'PocketBase'
   description: 'A backend in one file: SQLite, realtime, auth and an admin UI. Create the first admin on first visit.'
   icon: https://github.com/pocketbase.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: backend
   tags: ['backend', 'baas', 'sqlite']
   keywords: ['firebase alternative', 'supabase lite', 'realtime', 'auth']
@@ -39,7 +39,7 @@ resources:
       resources:
         cpu: 250m
         memory: 256Mi
-      image: ghcr.io/muchobien/pocketbase:latest
+      image: ghcr.io/muchobien/pocketbase:0.42
       replicas: 1
       ports:
         - name: http

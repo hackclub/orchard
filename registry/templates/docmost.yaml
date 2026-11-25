@@ -5,7 +5,7 @@ metadata:
   displayName: 'Docmost'
   description: 'A wiki with real-time editing, spaces and comments. Ships with its own Postgres and Valkey.'
   icon: https://github.com/docmost.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: docs
   tags: ['wiki', 'docs', 'knowledge base', 'collaboration']
   keywords: ['notion', 'confluence', 'outline', 'documentation', 'pages']
@@ -138,7 +138,7 @@ resources:
       resources:
         cpu: 500m
         memory: 1Gi
-      image: docmost/docmost:latest
+      image: docmost/docmost:0.98
       replicas: 1
       ports:
         - name: http

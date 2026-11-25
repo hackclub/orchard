@@ -5,7 +5,7 @@ metadata:
   displayName: 'Keycloak'
   description: 'Single sign-on for your apps. OpenID Connect, SAML, social logins and user federation, without hand-tuning the container.'
   icon: https://github.com/keycloak.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: auth
   tags: ['sso', 'oidc', 'saml', 'identity']
   keywords: ['auth0', 'okta', 'login', 'identity provider', 'oauth', 'users']
@@ -85,7 +85,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 2Gi
-      image: quay.io/keycloak/keycloak:26.0
+      image: quay.io/keycloak/keycloak:26.8
       startCommand: 'start'
       replicas: 1
       ports:

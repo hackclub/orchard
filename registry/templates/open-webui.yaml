@@ -92,7 +92,7 @@ resources:
       resources:
         cpu: 1000m
         memory: 2Gi
-      image: ghcr.io/open-webui/open-webui:main
+      image: ghcr.io/open-webui/open-webui:0.13
       replicas: 1
       ports:
         - name: http

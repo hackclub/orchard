@@ -5,7 +5,7 @@ metadata:
   displayName: 'changedetection.io'
   description: 'Watch any page for changes and get notified. Prices, stock, docs, anything.'
   icon: https://raw.githubusercontent.com/dgtlmoon/changedetection.io/master/changedetectionio/static/favicons/apple-touch-icon.png
-  version: '1.1.0'
+  version: '1.1.1'
   category: monitoring
   tags: ['monitoring', 'scraping', 'notifications']
   keywords: ['website change', 'price tracker', 'watch page', 'visualping']
@@ -55,7 +55,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: ghcr.io/dgtlmoon/changedetection.io:latest
+      image: ghcr.io/dgtlmoon/changedetection.io:0.70
       replicas: 1
       ports:
         - name: http

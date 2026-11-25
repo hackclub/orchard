@@ -5,7 +5,7 @@ metadata:
   displayName: 'Firefly III'
   description: 'Personal finance with accounts, budgets, rules and reports.'
   icon: https://github.com/firefly-iii.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: finance
   tags: ['finance', 'budget', 'accounting']
   keywords: ['ynab', 'money manager', 'transactions', 'bank import']
@@ -81,7 +81,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: fireflyiii/core:latest
+      image: fireflyiii/core:version-6
       replicas: 1
       ports:
         - name: http

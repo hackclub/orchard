@@ -5,7 +5,7 @@ metadata:
   displayName: 'Enshrouded Server'
   description: 'A dedicated Enshrouded server on public UDP ports.'
   icon: none
-  version: '1.1.0'
+  version: '1.1.1'
   category: games
   tags: ['enshrouded', 'game server', 'multiplayer']
   keywords: ['survival', 'coop', 'dedicated server', 'steam']
@@ -52,7 +52,7 @@ resources:
       resources:
         cpu: 4000m
         memory: 16Gi
-      image: sknnr/enshrouded-dedicated-server:latest
+      image: sknnr/enshrouded-dedicated-server:proton-v2.4.0
       replicas: 1
       ports:
         - name: game

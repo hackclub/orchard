@@ -5,7 +5,7 @@ metadata:
   displayName: 'Vikunja'
   description: 'Tasks and projects with lists, kanban, gantt and CalDAV.'
   icon: https://github.com/go-vikunja.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: docs
   tags: ['tasks', 'todo', 'kanban']
   keywords: ['todoist', 'trello', 'project management', 'caldav']
@@ -61,7 +61,7 @@ resources:
       resources:
         cpu: 250m
         memory: 256Mi
-      image: vikunja/vikunja:latest
+      image: vikunja/vikunja:2
       replicas: 1
       ports:
         - name: http

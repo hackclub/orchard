@@ -282,6 +282,16 @@ func TestValidationErrors(t *testing.T) {
 		"metadata:\n  name: ok\n  version: 1.0.0\nresources:\n  - {name: a, type: deployment, config: {resources: {cpu: lots, memory: 1Gi}}}\n":         "not a valid size",
 		"metadata:\n  name: ok\n  version: 1.0.0\nresources:\n  - {name: a, type: deployment, config: {resources: {cpu: 1, memory: 1Gi, gpu: 1}}}\n":    "unknown field",
 	}
+	for _, image := range []string{"redis", "redis:latest", "localhost:5000/redis", "ghcr.io/a/b:latest"} {
+		body := "metadata:\n  name: ok\n  version: 1.0.0\nresources:\n  - {name: a, type: deployment, config: {image: '" + image + "', resources: {cpu: 1, memory: 1Gi}}}\n"
+		cases[body] = "must pin a version"
+	}
+	for _, image := range []string{"redis:7", "localhost:5000/redis:7.2", "redis@sha256:abc", "{{ params.image }}"} {
+		body := "metadata:\n  name: ok\n  version: 1.0.0\nresources:\n  - {name: a, type: deployment, config: {image: '" + image + "', resources: {cpu: 1, memory: 1Gi}}}\n"
+		if _, err := parseTemplate([]byte(body)); err != nil {
+			t.Errorf("%q: expected no error, got %v", image, err)
+		}
+	}
 	for body, want := range cases {
 		if _, err := parseTemplate([]byte(body)); err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("%q: expected error containing %q, got %v", body, want, err)

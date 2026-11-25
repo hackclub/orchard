@@ -5,7 +5,7 @@ metadata:
   displayName: 'Satisfactory Server'
   description: 'A dedicated Satisfactory server on public ports, with autosave and auto-pause when empty.'
   icon: none
-  version: '1.1.0'
+  version: '1.1.1'
   category: games
   tags: ['satisfactory', 'game server', 'multiplayer']
   keywords: ['factory', 'coop', 'dedicated server', 'steam']
@@ -62,7 +62,7 @@ resources:
       resources:
         cpu: 4000m
         memory: 16Gi
-      image: wolveix/satisfactory-server:latest
+      image: wolveix/satisfactory-server:v1
       replicas: 1
       ports:
         - name: game

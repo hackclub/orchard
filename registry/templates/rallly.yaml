@@ -5,7 +5,7 @@ metadata:
   displayName: 'Rallly'
   description: 'Group scheduling polls, like Doodle. Sign-in is by email code, so SMTP is required.'
   icon: calendar
-  version: '1.1.0'
+  version: '1.1.1'
   category: community
   tags: ['scheduling', 'polls', 'calendar']
   keywords: ['doodle', 'when2meet', 'meeting poll', 'availability']
@@ -89,7 +89,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: lukevella/rallly:latest
+      image: lukevella/rallly:4
       replicas: 1
       ports:
         - name: http

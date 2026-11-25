@@ -5,7 +5,7 @@ metadata:
   displayName: 'Grafana'
   description: 'Dashboards over Prometheus, Postgres, Loki and everything else. Config in Postgres so the pod is disposable.'
   icon: https://github.com/grafana.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: monitoring
   tags: ['dashboards', 'metrics', 'observability']
   keywords: ['prometheus', 'loki', 'charts', 'monitoring dashboards']
@@ -96,7 +96,7 @@ resources:
       resources:
         cpu: 500m
         memory: 512Mi
-      image: grafana/grafana-oss:latest
+      image: grafana/grafana:13.3
       replicas: 1
       ports:
         - name: http

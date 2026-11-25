@@ -319,8 +319,29 @@ func parseTemplate(body []byte) (templateDoc, error) {
 		if err := validatePodResources(r.Config["resources"]); err != nil {
 			return doc, fmt.Errorf("resources[%d] (%s): %w", i, r.Name, err)
 		}
+		if r.Type != "deployment" {
+			continue
+		}
+		if err := validateImageTag(r.Config["image"]); err != nil {
+			return doc, fmt.Errorf("resources[%d] (%s): %w", i, r.Name, err)
+		}
 	}
 	return doc, nil
+}
+
+func validateImageTag(raw any) error {
+	image, ok := raw.(string)
+	if !ok || image == "" || strings.Contains(image, "{{") || strings.Contains(image, "@") {
+		return nil
+	}
+	tag := ""
+	if i := strings.LastIndex(image, ":"); i > strings.LastIndex(image, "/") {
+		tag = image[i+1:]
+	}
+	if tag == "" || tag == "latest" {
+		return fmt.Errorf("image %q must pin a version or a major tag such as :2, not latest", image)
+	}
+	return nil
 }
 
 var sidecars = []struct{ ext, name, ctype string }{

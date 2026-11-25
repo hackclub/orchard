@@ -5,7 +5,7 @@ metadata:
   displayName: 'Homepage'
   description: 'A start page for all your services, with widgets for docker, media servers and status.'
   icon: https://github.com/gethomepage.png?size=256
-  version: '1.1.0'
+  version: '1.1.1'
   category: developer
   tags: ['dashboard', 'start page']
   keywords: ['homarr', 'heimdall', 'dashy', 'launcher']
@@ -39,7 +39,7 @@ resources:
       resources:
         cpu: 250m
         memory: 256Mi
-      image: ghcr.io/gethomepage/homepage:latest
+      image: ghcr.io/gethomepage/homepage:v2
       replicas: 1
       ports:
         - name: http
