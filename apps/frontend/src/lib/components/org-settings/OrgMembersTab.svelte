@@ -1,5 +1,6 @@
 <script lang="ts">
 	import {
+		Ban,
 		ChevronDown,
 		ChevronsUpDown,
 		Link2,
@@ -7,7 +8,6 @@
 		Unlink,
 		UserCheck,
 		UserPlus,
-		UserX,
 		X
 	} from 'lucide-svelte';
 	import {
@@ -163,7 +163,7 @@
 		member: 'minmax(0, 1fr)',
 		access: '9.5rem',
 		role: '8rem',
-		actions: '5.75rem'
+		actions: '11rem'
 	};
 
 	const memberColumns: TableColumn<Member>[] = [
@@ -428,14 +428,16 @@
 				<Button
 					variant="ghost"
 					size="sm"
-					icon={member.status === 'disabled' ? UserCheck : UserX}
+					icon={member.status === 'disabled' ? UserCheck : Ban}
 					label="{member.status === 'disabled' ? 'Turn on' : 'Turn off'} access for {memberName(
 						member
 					) || member.user.email}"
 					loading={removingMemberId === member.id}
 					disabled={removingMemberId !== null}
 					onclick={() => onRemoveMember(member.id)}
-				/>
+				>
+					{member.status === 'disabled' ? 'Turn on access' : 'Turn off access'}
+				</Button>
 			{/if}
 		{/snippet}
 	</Table>
