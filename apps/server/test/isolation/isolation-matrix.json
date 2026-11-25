@@ -1739,6 +1739,15 @@
     "bodyIds": [],
     "unseeded": []
   },
+  "GET /deployments/:id/image-update": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "ImageUpdatesController.status",
+    "params": ["id:deployment"],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
   "GET /deployments/:id/killed-containers": {
     "class": "resource-scoped",
     "auth": "authenticated",
@@ -4144,6 +4153,15 @@
     "bodyIds": [],
     "unseeded": []
   },
+  "PATCH /deployments/:id/image-update": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "ImageUpdatesController.setAutoUpdate",
+    "params": ["id:deployment"],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
   "PATCH /deployments/:id/name": {
     "class": "resource-scoped",
     "auth": "authenticated",
@@ -5131,6 +5149,24 @@
     "class": "resource-scoped",
     "auth": "authenticated",
     "handler": "DeploymentsController.uploadDeploymentIcon",
+    "params": ["id:deployment"],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "POST /deployments/:id/image-update": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "ImageUpdatesController.update",
+    "params": ["id:deployment"],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "POST /deployments/:id/image-update/check": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "ImageUpdatesController.check",
     "params": ["id:deployment"],
     "queryIds": [],
     "bodyIds": [],
