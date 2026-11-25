@@ -20,6 +20,7 @@ export interface RouteAttachment {
   response?: ZodTypeAny;
   summary?: string;
   scope?: Scope;
+  operationId?: string;
 }
 
 export interface Route extends GeneratedRoute, RouteAttachment {}

@@ -3312,6 +3312,41 @@ export class K8sWorkloadService {
     return result;
   }
 
+  async runningImageDigests(deploymentName: string, namespace: string): Promise<string[] | null> {
+    this.ensureKubeConfig();
+    const appsApi = this.kc.makeApiClient(k8s.AppsV1Api);
+    const coreApi = this.kc.makeApiClient(k8s.CoreV1Api);
+    let selector: k8s.V1LabelSelector | undefined;
+    try {
+      selector = (await appsApi.readNamespacedDeployment(deploymentName, namespace)).body.spec
+        ?.selector;
+    } catch (err: any) {
+      if ((err?.statusCode ?? err?.response?.statusCode) === 404) return null;
+      throw err;
+    }
+    const labels = selector?.matchLabels ?? { app: deploymentName };
+    const labelSelector = Object.entries(labels)
+      .map(([key, value]) => `${key}=${value}`)
+      .join(',');
+    const pods = await coreApi.listNamespacedPod(
+      namespace,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      labelSelector
+    );
+    const digests = new Set<string>();
+    for (const pod of pods.body.items) {
+      if (pod.metadata?.deletionTimestamp) continue;
+      const statuses = pod.status?.containerStatuses ?? [];
+      const status = statuses.find((s) => s.name === deploymentName) ?? statuses[0];
+      const digest = status?.imageID?.match(/@(sha256:[a-f0-9]{64})$/)?.[1];
+      if (digest) digests.add(digest);
+    }
+    return [...digests];
+  }
+
   async getDeploymentPods(deploymentName: string, namespace = 'midnight-staging') {
     this.ensureKubeConfig();
 

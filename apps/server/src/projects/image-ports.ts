@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { lookup as dnsLookup } from 'dns/promises';
 import { isIP } from 'net';
 import { Agent, fetch as undiciFetch } from 'undici';
@@ -46,6 +47,7 @@ const REPOSITORY_RE =
   /^[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*(?:\/[a-z0-9]+(?:(?:\.|_|__|-+)[a-z0-9]+)*)*$/;
 const TAG_RE = /^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$/;
 const DIGEST_RE = /^[a-z0-9]+(?:[.+_-][a-z0-9]+)*:[A-Za-z0-9=_-]+$/;
+const SHA256_DIGEST_RE = /^sha256:[a-f0-9]{64}$/;
 const EXPOSED_PORT_RE = /^(\d{1,5})(?:\/(tcp|udp|sctp))?$/i;
 
 export interface ExposedPort {
@@ -70,6 +72,7 @@ export interface RegistryCredential {
 }
 
 export interface RegistryRequest {
+  method?: 'GET' | 'HEAD';
   headers: Record<string, string>;
   signal: AbortSignal;
   pinned: boolean;
@@ -218,7 +221,8 @@ async function follow(
   session: Session,
   start: URL,
   accept: string,
-  authorization: string | null
+  authorization: string | null,
+  method: 'GET' | 'HEAD' = 'GET'
 ): Promise<{ res: Response; url: URL }> {
   let url = start;
   let credential = authorization;
@@ -226,7 +230,12 @@ async function follow(
     const { pinned } = await vetDestination(session, url);
     const headers: Record<string, string> = { accept };
     if (credential) headers.authorization = credential;
-    const res = await session.net.fetch(url, { headers, signal: session.signal, pinned });
+    const res = await session.net.fetch(url, {
+      method,
+      headers,
+      signal: session.signal,
+      pinned
+    });
     if (!isRedirect(res.status)) return { res, url };
     await discard(res);
     if (hop >= MAX_REDIRECTS) throw new InspectFailure('too_many_redirects');
@@ -247,11 +256,15 @@ async function follow(
 }
 
 async function readCapped(res: Response, maxBytes: number): Promise<string> {
+  return (await readCappedBytes(res, maxBytes)).toString('utf8');
+}
+
+async function readCappedBytes(res: Response, maxBytes: number): Promise<Buffer> {
   if (Number(res.headers.get('content-length') ?? 0) > maxBytes) {
     await discard(res);
     throw new InspectFailure('too_large');
   }
-  if (!res.body) return '';
+  if (!res.body) return Buffer.alloc(0);
   const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -265,7 +278,7 @@ async function readCapped(res: Response, maxBytes: number): Promise<string> {
     }
     chunks.push(value);
   }
-  return Buffer.concat(chunks).toString('utf8');
+  return Buffer.concat(chunks);
 }
 
 function parseObject(text: string): Record<string, any> {
@@ -321,21 +334,30 @@ async function authorize(session: Session, header: string | null): Promise<strin
   return `Bearer ${token}`;
 }
 
-async function registryGet(session: Session, path: string, accept: string): Promise<string> {
+async function registryRequest(
+  session: Session,
+  path: string,
+  accept: string,
+  method: 'GET' | 'HEAD' = 'GET'
+): Promise<Response> {
   const target = new URL(path, session.base);
-  let { res, url } = await follow(session, target, accept, session.authorization);
+  let { res, url } = await follow(session, target, accept, session.authorization, method);
   if (res.status === 401 && url.origin === session.base.origin && !session.challenged) {
     session.challenged = true;
     const header = res.headers.get('www-authenticate');
     await discard(res);
     session.authorization = await authorize(session, header);
-    ({ res, url } = await follow(session, target, accept, session.authorization));
+    ({ res, url } = await follow(session, target, accept, session.authorization, method));
   }
   if (res.status !== 200) {
     await discard(res);
     throw new InspectFailure(`http_${res.status}`);
   }
-  return readCapped(res, session.maxBytes);
+  return res;
+}
+
+async function registryGet(session: Session, path: string, accept: string): Promise<string> {
+  return readCapped(await registryRequest(session, path, accept), session.maxBytes);
 }
 
 function pickManifest(manifests: unknown[], preferred: string): string | null {
@@ -456,7 +478,7 @@ export function createRegistryNet(
     resolve,
     fetch: (url, request) =>
       undiciFetch(url, {
-        method: 'GET',
+        method: request.method ?? 'GET',
         headers: request.headers,
         redirect: 'manual',
         signal: request.signal,
@@ -481,15 +503,16 @@ export function finalBaseImage(dockerfile: string): string | null {
 
 let sharedNet: RegistryNet | null = null;
 
-export async function inspectImagePorts(
+async function withSession<T>(
   image: unknown,
-  options: InspectOptions = {}
-): Promise<ImagePorts> {
-  const none: ImagePorts = { port: null, ports: [] };
+  options: InspectOptions,
+  fallback: T,
+  work: (session: Session) => Promise<T>
+): Promise<T> {
   const ref = typeof image === 'string' ? parseImageRef(image) : null;
   if (!ref) {
     options.onFailure?.('invalid_reference', null);
-    return none;
+    return fallback;
   }
   const deadline = new AbortController();
   const { signal } = deadline;
@@ -508,16 +531,58 @@ export async function inspectImagePorts(
       authorization: null,
       challenged: false
     };
-    const config = await untilAborted(readConfig(session, ref.reference), signal);
-    const ports = exposedPortsFrom(config);
-    return { port: chooseDefaultPort(ports), ports };
+    return await untilAborted(work(session), signal);
   } catch (err) {
     const reason =
       err instanceof InspectFailure ? err.reason : signal.aborted ? 'timeout' : 'network';
     options.onFailure?.(reason, ref.registry);
-    return none;
+    return fallback;
   } finally {
     clearTimeout(timer);
     deadline.abort();
   }
+}
+
+export function inspectImagePorts(
+  image: unknown,
+  options: InspectOptions = {}
+): Promise<ImagePorts> {
+  return withSession<ImagePorts>(image, options, { port: null, ports: [] }, async (session) => {
+    const ports = exposedPortsFrom(await readConfig(session, session.ref.reference));
+    return { port: chooseDefaultPort(ports), ports };
+  });
+}
+
+function contentDigest(res: Response): string | null {
+  const header = res.headers.get('docker-content-digest')?.trim();
+  return header && SHA256_DIGEST_RE.test(header) ? header : null;
+}
+
+async function readManifestDigest(session: Session): Promise<string> {
+  const path = `/v2/${session.ref.repository}/manifests/${session.ref.reference}`;
+  const head = await registryRequest(session, path, MANIFEST_ACCEPT, 'HEAD').catch(
+    (err: unknown) => {
+      if (err instanceof InspectFailure && /^http_(404|401|403)$/.test(err.reason)) throw err;
+      return null;
+    }
+  );
+  if (head) {
+    await discard(head);
+    const digest = contentDigest(head);
+    if (digest) return digest;
+  }
+  const res = await registryRequest(session, path, MANIFEST_ACCEPT);
+  const header = contentDigest(res);
+  const body = await readCappedBytes(res, session.maxBytes);
+  return header ?? `sha256:${createHash('sha256').update(body).digest('hex')}`;
+}
+
+export function resolveImageDigest(
+  image: unknown,
+  options: InspectOptions = {}
+): Promise<string | null> {
+  return withSession<string | null>(image, options, null, async (session) => {
+    if (session.ref.reference.includes(':')) throw new InspectFailure('pinned_by_digest');
+    return readManifestDigest(session);
+  });
 }

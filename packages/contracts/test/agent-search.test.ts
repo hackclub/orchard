@@ -129,3 +129,18 @@ test('operation ids are unique even when static words collide', () => {
   assert.equal(new Set(ids.values()).size, 4);
   assert.equal(ids.get('PUT /x/:id'), 'x_update_by_id_put');
 });
+
+test('an explicit operation id is kept and cannot take a derived one', () => {
+  const ids = assignOperationIds([
+    { method: 'PATCH', path: '/d/:id/image' },
+    { method: 'POST', path: '/d/:id/image-update', operationId: 'd_image_update_pull' }
+  ]);
+  assert.equal(ids.get('POST /d/:id/image-update'), 'd_image_update_pull');
+  assert.equal(ids.get('PATCH /d/:id/image'), 'd_image_update');
+  assert.throws(() =>
+    assignOperationIds([
+      { method: 'PATCH', path: '/d/:id/image' },
+      { method: 'GET', path: '/d/:id/thing', operationId: 'd_image_update' }
+    ])
+  );
+});

@@ -279,6 +279,19 @@ const projectRef = z
   })
   .passthrough();
 
+const imageUpdateStatus = z.object({
+  image: z.string().nullable(),
+  tracked: z.boolean().describe('False when the app cannot follow its tag; blocker says why.'),
+  blocker: z.enum(['no_image', 'source', 'platform', 'digest', 'pull_policy']).nullable(),
+  autoUpdate: z.boolean(),
+  runningDigest: z.string().nullable().describe('The digest the pods run.'),
+  latestDigest: z.string().nullable().describe('The digest the tag points at in the registry.'),
+  updateAvailable: z.boolean(),
+  checkedAt: z.string().nullable(),
+  error: z.string().nullable().describe('Why the last registry check failed.'),
+  updatedAt: z.string().nullable().describe('When the image was last pulled again.')
+});
+
 const deploymentBase = z
   .object({
     id: z.string(),
@@ -305,6 +318,10 @@ const deploymentBase = z
       .enum(['Always', 'IfNotPresent'])
       .optional()
       .describe('What the cluster is actually doing, after deriving. Render this.'),
+    imageAutoUpdate: z
+      .boolean()
+      .optional()
+      .describe('Roll out new pushes of the image tag by themselves.'),
     githubRepo: z.string().nullable().optional(),
     githubBranch: z.string().nullable().optional(),
     dockerfilePath: z.string().nullable().optional(),
@@ -795,6 +812,35 @@ export const attachments: Record<`${string} /${string}`, RouteAttachment> = {
         })
       )
     })
+  },
+  'GET /deployments/:id/image-update': {
+    operationId: 'deployments_image_update_status_get',
+    summary: 'Whether a newer push of the image tag is available',
+    scope: 'read',
+    response: imageUpdateStatus
+  },
+  'POST /deployments/:id/image-update/check': {
+    operationId: 'deployments_image_update_check',
+    summary: 'Ask the registry for the tag digest now',
+    scope: 'deploy',
+    response: imageUpdateStatus
+  },
+  'POST /deployments/:id/image-update': {
+    operationId: 'deployments_image_update_pull',
+    summary: 'Pull the newest push of the image tag and roll it out',
+    scope: 'deploy',
+    response: imageUpdateStatus
+  },
+  'PATCH /deployments/:id/image-update': {
+    operationId: 'deployments_image_update_auto_update_set',
+    summary: 'Turn image auto-update on or off',
+    scope: 'deploy',
+    request: z.object({
+      autoUpdate: z
+        .boolean()
+        .describe('Roll out a new push of the same tag within a few hours of it landing.')
+    }),
+    response: imageUpdateStatus
   },
   'PATCH /deployments/:id/pull-policy': {
     summary: 'Pin or clear the image pull policy override',

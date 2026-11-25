@@ -1,6 +1,7 @@
 export interface OperationKey {
   method: string;
   path: string;
+  operationId?: string;
 }
 
 const NOT_COLLECTIONS = new Set([
@@ -84,7 +85,11 @@ function paramSuffix(path: string): string | null {
 
 export function assignOperationIds<T extends OperationKey>(routes: T[]): Map<string, string> {
   const keyOf = (route: OperationKey) => `${route.method.toUpperCase()} ${route.path}`;
-  const sorted = [...routes].sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
+  const fixed = new Map<string, string>();
+  for (const route of routes) if (route.operationId) fixed.set(keyOf(route), route.operationId);
+  const sorted = [...routes]
+    .filter((route) => !fixed.has(keyOf(route)))
+    .sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
   const ids = new Map<string, string>();
   for (const route of sorted) ids.set(keyOf(route), baseOperationId(route.method, route.path));
 
@@ -112,6 +117,12 @@ export function assignOperationIds<T extends OperationKey>(routes: T[]): Map<str
     const count = (seen.get(id) ?? 0) + 1;
     seen.set(id, count);
     if (count > 1) ids.set(keyOf(route), `${id}_${count}`);
+  }
+  const taken = new Set(ids.values());
+  for (const [key, id] of fixed) {
+    if (taken.has(id)) throw new Error(`operationId ${id} on ${key} is already in use`);
+    taken.add(id);
+    ids.set(key, id);
   }
   return ids;
 }

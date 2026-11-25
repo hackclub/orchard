@@ -775,6 +775,14 @@ model Deployment {
   // GitHub builds get a unique v<timestamp> tag per build, so they derive to
   // IfNotPresent and re-pulling would be pure waste.
   imagePullPolicy      ImagePullPolicy?   @map("image_pull_policy")
+  imageAutoUpdate      Boolean            @default(false) @map("image_auto_update")
+  imageCheckedRef      String?            @map("image_checked_ref") @db.VarChar(500)
+  imageRunningDigest   String?            @map("image_running_digest") @db.VarChar(100)
+  imageLatestDigest    String?            @map("image_latest_digest") @db.VarChar(100)
+  imageAttemptedDigest String?            @map("image_attempted_digest") @db.VarChar(100)
+  imageCheckedAt       DateTime?          @map("image_checked_at") @db.Timestamp(6)
+  imageCheckError      String?            @map("image_check_error") @db.VarChar(100)
+  imageUpdatedAt       DateTime?          @map("image_updated_at") @db.Timestamp(6)
   envObservedHash      String?            @map("env_observed_hash") @db.VarChar(64)
   envConflicts         Json?              @map("env_conflicts") @db.JsonB
   githubRepo           String?            @map("github_repo") @db.VarChar(500)

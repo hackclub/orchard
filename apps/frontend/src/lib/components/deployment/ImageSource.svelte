@@ -3,6 +3,7 @@
 	import SettingsList from '$lib/components/ui/SettingsList.svelte';
 	import SettingRow from '$lib/components/ui/SettingRow.svelte';
 	import { isMutableTag } from './deployment-helpers';
+	import ImageUpdates from './ImageUpdates.svelte';
 	import RegistryAccess from './RegistryAccess.svelte';
 
 	type Policy = 'Always' | 'IfNotPresent';
@@ -88,6 +89,12 @@
 				}
 			/>
 		</SettingRow>
+		<ImageUpdates
+			deploymentId={deployment?.id ?? ''}
+			image={deployment?.image}
+			{effectivePullPolicy}
+			stopped={!!deployment?.stopped}
+		/>
 		<RegistryAccess
 			projectId={deployment?.projectId ?? ''}
 			image={imageInput || deployment?.image || ''}

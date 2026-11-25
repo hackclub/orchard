@@ -11082,6 +11082,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -12611,6 +12615,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -14110,6 +14118,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -15566,6 +15578,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
@@ -17062,6 +17078,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -18535,6 +18555,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
@@ -20224,6 +20248,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imageHistory": {
                       "items": {
@@ -21954,6 +21982,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -23426,6 +23458,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
@@ -25170,6 +25206,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imageHistory": {
                       "items": {
@@ -27125,6 +27165,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -28829,6 +28873,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imageHistory": {
                       "items": {
                         "additionalProperties": {},
@@ -30407,6 +30455,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -30831,6 +30883,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -31180,6 +31236,514 @@
           }
         ],
         "summary": "Build logs for an image history entry",
+        "tags": [
+          "deployments"
+        ]
+      }
+    },
+    "/deployments/{id}/image-update": {
+      "get": {
+        "description": "Auth: authenticated (scope: read)",
+        "operationId": "deployments_image_update_status_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "autoUpdate": {
+                      "type": "boolean"
+                    },
+                    "blocker": {
+                      "enum": [
+                        "no_image",
+                        "source",
+                        "platform",
+                        "digest",
+                        "pull_policy",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "checkedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "error": {
+                      "description": "Why the last registry check failed.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "latestDigest": {
+                      "description": "The digest the tag points at in the registry.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "runningDigest": {
+                      "description": "The digest the pods run.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "tracked": {
+                      "description": "False when the app cannot follow its tag; blocker says why.",
+                      "type": "boolean"
+                    },
+                    "updateAvailable": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "description": "When the image was last pulled again.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "image",
+                    "tracked",
+                    "blocker",
+                    "autoUpdate",
+                    "runningDigest",
+                    "latestDigest",
+                    "updateAvailable",
+                    "checkedAt",
+                    "error",
+                    "updatedAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Whether a newer push of the image tag is available",
+        "tags": [
+          "deployments"
+        ]
+      },
+      "patch": {
+        "description": "Auth: authenticated (scope: deploy)",
+        "operationId": "deployments_image_update_auto_update_set",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "autoUpdate": {
+                    "description": "Roll out a new push of the same tag within a few hours of it landing.",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "autoUpdate"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "autoUpdate": {
+                      "type": "boolean"
+                    },
+                    "blocker": {
+                      "enum": [
+                        "no_image",
+                        "source",
+                        "platform",
+                        "digest",
+                        "pull_policy",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "checkedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "error": {
+                      "description": "Why the last registry check failed.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "latestDigest": {
+                      "description": "The digest the tag points at in the registry.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "runningDigest": {
+                      "description": "The digest the pods run.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "tracked": {
+                      "description": "False when the app cannot follow its tag; blocker says why.",
+                      "type": "boolean"
+                    },
+                    "updateAvailable": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "description": "When the image was last pulled again.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "image",
+                    "tracked",
+                    "blocker",
+                    "autoUpdate",
+                    "runningDigest",
+                    "latestDigest",
+                    "updateAvailable",
+                    "checkedAt",
+                    "error",
+                    "updatedAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Turn image auto-update on or off",
+        "tags": [
+          "deployments"
+        ]
+      },
+      "post": {
+        "description": "Auth: authenticated (scope: deploy)",
+        "operationId": "deployments_image_update_pull",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {},
+                "properties": {},
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "autoUpdate": {
+                      "type": "boolean"
+                    },
+                    "blocker": {
+                      "enum": [
+                        "no_image",
+                        "source",
+                        "platform",
+                        "digest",
+                        "pull_policy",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "checkedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "error": {
+                      "description": "Why the last registry check failed.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "latestDigest": {
+                      "description": "The digest the tag points at in the registry.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "runningDigest": {
+                      "description": "The digest the pods run.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "tracked": {
+                      "description": "False when the app cannot follow its tag; blocker says why.",
+                      "type": "boolean"
+                    },
+                    "updateAvailable": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "description": "When the image was last pulled again.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "image",
+                    "tracked",
+                    "blocker",
+                    "autoUpdate",
+                    "runningDigest",
+                    "latestDigest",
+                    "updateAvailable",
+                    "checkedAt",
+                    "error",
+                    "updatedAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Pull the newest push of the image tag and roll it out",
+        "tags": [
+          "deployments"
+        ]
+      }
+    },
+    "/deployments/{id}/image-update/check": {
+      "post": {
+        "description": "Auth: authenticated (scope: deploy)",
+        "operationId": "deployments_image_update_check",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {},
+                "properties": {},
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "autoUpdate": {
+                      "type": "boolean"
+                    },
+                    "blocker": {
+                      "enum": [
+                        "no_image",
+                        "source",
+                        "platform",
+                        "digest",
+                        "pull_policy",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "checkedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "error": {
+                      "description": "Why the last registry check failed.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "latestDigest": {
+                      "description": "The digest the tag points at in the registry.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "runningDigest": {
+                      "description": "The digest the pods run.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "tracked": {
+                      "description": "False when the app cannot follow its tag; blocker says why.",
+                      "type": "boolean"
+                    },
+                    "updateAvailable": {
+                      "type": "boolean"
+                    },
+                    "updatedAt": {
+                      "description": "When the image was last pulled again.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "image",
+                    "tracked",
+                    "blocker",
+                    "autoUpdate",
+                    "runningDigest",
+                    "latestDigest",
+                    "updateAvailable",
+                    "checkedAt",
+                    "error",
+                    "updatedAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Ask the registry for the tag digest now",
         "tags": [
           "deployments"
         ]
@@ -31573,6 +32137,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
@@ -34318,6 +34886,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -34777,6 +35349,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
@@ -36300,6 +36876,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -36987,6 +37567,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
@@ -39470,6 +40054,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [
@@ -39971,6 +40559,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
@@ -50095,6 +50687,10 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "imageAutoUpdate": {
+                          "description": "Roll out new pushes of the image tag by themselves.",
+                          "type": "boolean"
                         },
                         "imagePullPolicy": {
                           "description": "The override. null means it is derived from the image tag.",
@@ -61191,6 +61787,10 @@
                           "null"
                         ]
                       },
+                      "imageAutoUpdate": {
+                        "description": "Roll out new pushes of the image tag by themselves.",
+                        "type": "boolean"
+                      },
                       "imagePullPolicy": {
                         "description": "The override. null means it is derived from the image tag.",
                         "enum": [
@@ -62785,6 +63385,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
@@ -64425,6 +65029,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
                     },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",

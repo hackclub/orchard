@@ -42,6 +42,8 @@ import { OverviewController } from './overview.controller';
 import { ProjectTransfersController } from './project-transfers.controller';
 import { RegistryCredentialsController } from './registry-credentials.controller';
 import { ImagePortsController } from './image-ports.controller';
+import { ImageUpdatesController } from './image-updates.controller';
+import { ImageUpdatesService } from './image-updates.service';
 import { NamespaceTeardownService } from './namespace-teardown.service';
 import { RolloutStatusService } from './rollout-status.service';
 import { RolloutController, RolloutPinInterceptor } from './rollout.controller';
@@ -104,7 +106,8 @@ import { DatabaseAdminController } from './database-admin.controller';
     FaviconService,
     NamespaceTeardownService,
     RolloutStatusService,
-    RolloutPinInterceptor
+    RolloutPinInterceptor,
+    ImageUpdatesService
   ],
   controllers: [
     ProjectsController,
@@ -120,6 +123,7 @@ import { DatabaseAdminController } from './database-admin.controller';
     ProjectTransfersController,
     RegistryCredentialsController,
     ImagePortsController,
+    ImageUpdatesController,
     RolloutController
   ],
   exports: [
