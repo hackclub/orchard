@@ -312,17 +312,30 @@ test('auto-update restarts once per new digest and skips a rollout already runni
   assert.deepEqual(restarts, ['tracked']);
 });
 
-test('a failed auto-update restart is recorded and not retried every sweep', async () => {
+test('a failed auto-update restart is retried on the next sweep', async () => {
   const tracked = fakeRow('tracked', { imageAutoUpdate: true });
+  let fail = true;
   const { svc, restarts } = service([tracked], async () => {
-    throw new Error('quota exceeded');
+    if (fail) throw new Error('quota exceeded');
   });
   await svc.sweep();
   assert.deepEqual(restarts, ['tracked']);
-  assert.equal(tracked.imageAttemptedDigest, NEW);
-  tracked.imageCheckedAt = new Date(0);
+  assert.equal(tracked.imageAttemptedDigest, null);
+  fail = false;
   await svc.sweep();
-  assert.deepEqual(restarts, ['tracked']);
+  assert.deepEqual(restarts, ['tracked', 'tracked']);
+  assert.equal(tracked.imageAttemptedDigest, NEW);
+});
+
+test('a check that keeps failing moves to the back of the sweep', async () => {
+  const broken = fakeRow('broken', { imageCheckedAt: new Date(0) });
+  const { svc } = service([broken]);
+  (svc as any).check = async () => {
+    throw new Error('registry down');
+  };
+  await svc.sweep();
+  assert.ok(broken.imageCheckedAt && broken.imageCheckedAt.getTime() > 0);
+  assert.equal(broken.imageCheckError, 'registry down');
 });
 
 test('after a pull the running digest is observed, not assumed', async () => {

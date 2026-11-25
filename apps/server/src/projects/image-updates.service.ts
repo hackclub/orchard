@@ -138,9 +138,18 @@ export class ImageUpdatesService {
         }
         if (checked >= SWEEP_BATCH) continue;
         checked++;
-        await this.check(row).catch((err: any) =>
-          this.logger.warn(`image check for ${row.id} failed: ${err?.message ?? err}`)
-        );
+        await this.check(row).catch(async (err: any) => {
+          this.logger.warn(`image check for ${row.id} failed: ${err?.message ?? err}`);
+          await this.prisma.deployment
+            .update({
+              where: { id: row.id },
+              data: {
+                imageCheckedAt: new Date(),
+                imageCheckError: String(err?.message ?? err).slice(0, 200)
+              }
+            })
+            .catch(() => undefined);
+        });
       }
       await this.parkBlocked(blocked);
     }
@@ -314,11 +323,21 @@ export class ImageUpdatesService {
       where: { id: row.id },
       data: { imageAttemptedDigest: row.imageLatestDigest }
     });
-    await this.k8sWorkload.restartDeployment(
-      row.name,
-      row.namespace,
-      await this.quotas.prepareRollout(row)
-    );
+    try {
+      await this.k8sWorkload.restartDeployment(
+        row.name,
+        row.namespace,
+        await this.quotas.prepareRollout(row)
+      );
+    } catch (err) {
+      await this.prisma.deployment
+        .update({
+          where: { id: row.id },
+          data: { imageAttemptedDigest: row.imageAttemptedDigest ?? null }
+        })
+        .catch(() => undefined);
+      throw err;
+    }
     const updated = (await this.prisma.deployment.update({
       where: { id: row.id },
       data: { imageUpdatedAt: new Date(), imageCheckedAt: null },
