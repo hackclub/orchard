@@ -747,8 +747,6 @@ model Deployment {
   image                String?            @db.VarChar(500)
   replicas             Int                @default(1)
   stopped              Boolean            @default(false)
-  // Graft (by id) that created this deployment through the projects door.
-  // Only that graft may manage it through the door.
   createdByGraft       String?            @map("created_by_graft") @db.VarChar(48)
   pendingPush          Json?              @map("pending_push")
   // Per-container resource request (== limit; Guaranteed QoS).

@@ -46,6 +46,13 @@ function exitCodeOf(status: k8s.V1Status | undefined): number {
   return Number.isInteger(code) ? code : 1;
 }
 
+type DoorState = { graft: GraftRecord; moduleRef: ModuleRef; prisma: PrismaService };
+const doorState = new WeakMap<object, DoorState>();
+
+function state(door: object): DoorState {
+  return doorState.get(door)!;
+}
+
 @Injectable({ scope: Scope.TRANSIENT })
 export class ProjectsDoorV1 {
   static readonly meta: DoorMeta = {
@@ -54,14 +61,13 @@ export class ProjectsDoorV1 {
     status: 'stable',
     capability: 'projects.read'
   };
-  private readonly graft: GraftRecord;
 
   constructor(
     @Inject(INQUIRER) parent: unknown,
-    @Inject(ModuleRef) private readonly moduleRef: ModuleRef,
-    @Inject(PrismaService) private readonly prisma: PrismaService
+    @Inject(ModuleRef) moduleRef: ModuleRef,
+    @Inject(PrismaService) prisma: PrismaService
   ) {
-    this.graft = bindGraft(parent, ProjectsDoorV1.meta);
+    doorState.set(this, { graft: bindGraft(parent, ProjectsDoorV1.meta), moduleRef, prisma });
   }
 
   onEnvironmentEnvChanged(listener: (change: EnvironmentEnvChange) => void): () => void {
@@ -71,73 +77,75 @@ export class ProjectsDoorV1 {
   async createDeploymentFromGitHub(
     ...args: Parameters<CreateFromGitHub>
   ): Promise<Awaited<ReturnType<CreateFromGitHub>>> {
-    const created = await (await this.deployments()).createDeploymentFromGitHub(...args);
-    await this.stamp(created);
-    return created;
+    const [projectId, data, ...rest] = args;
+    return (await deployments(this)).createDeploymentFromGitHub(
+      projectId,
+      { ...data, createdByGraft: state(this).graft.id },
+      ...rest
+    );
   }
-
-  // Custom image deployment. `startCommand` overrides the image's CMD.
   async createDeployment(
     ...args: Parameters<CreateDeployment>
   ): Promise<Awaited<ReturnType<CreateDeployment>>> {
-    const created = await (await this.deployments()).createDeployment(...args);
-    await this.stamp(created);
-    return created;
+    const [projectId, data, ...rest] = args;
+    return (await deployments(this)).createDeployment(
+      projectId,
+      { ...data, createdByGraft: state(this).graft.id },
+      ...rest
+    );
   }
 
-  // Everything below acts only on deployments this graft created.
-
   async listOwnDeployments(): Promise<{ id: string; projectId: string; name: string }[]> {
-    return this.prisma.deployment.findMany({
-      where: { createdByGraft: this.graft.id },
+    return state(this).prisma.deployment.findMany({
+      where: { createdByGraft: state(this).graft.id },
       select: { id: true, projectId: true, name: true }
     });
   }
 
   async getDeployment(deploymentId: string) {
-    await this.own(deploymentId);
-    const svc = await this.deployments(false);
+    await own(this, deploymentId);
+    const svc = await deployments(this, false);
     return svc.getDeployment(deploymentId, false);
   }
 
   async getDeploymentPods(deploymentId: string) {
-    await this.own(deploymentId);
-    return (await this.deployments(false)).getDeploymentPods(deploymentId);
+    await own(this, deploymentId);
+    return (await deployments(this, false)).getDeploymentPods(deploymentId);
   }
 
   async startDeployment(deploymentId: string, clerkId: string) {
-    await this.own(deploymentId);
-    return (await this.deployments()).startDeployment(deploymentId, clerkId);
+    await own(this, deploymentId);
+    return (await deployments(this)).startDeployment(deploymentId, clerkId);
   }
 
   async stopDeployment(deploymentId: string, clerkId: string) {
-    await this.own(deploymentId);
-    return (await this.deployments()).stopDeployment(deploymentId, clerkId);
+    await own(this, deploymentId);
+    return (await deployments(this)).stopDeployment(deploymentId, clerkId);
   }
 
   async restartDeployment(deploymentId: string, clerkId: string) {
-    await this.own(deploymentId);
-    return (await this.deployments()).restartDeployment(deploymentId, clerkId);
+    await own(this, deploymentId);
+    return (await deployments(this)).restartDeployment(deploymentId, clerkId);
   }
 
   async scaleDeployment(deploymentId: string, replicas: number, clerkId: string) {
-    await this.own(deploymentId);
-    return (await this.deployments()).scaleDeployment(deploymentId, replicas, clerkId);
+    await own(this, deploymentId);
+    return (await deployments(this)).scaleDeployment(deploymentId, replicas, clerkId);
   }
 
   async deleteDeployment(deploymentId: string, clerkId: string) {
-    await this.own(deploymentId);
-    return (await this.deployments()).deleteDeployment(deploymentId, clerkId);
+    await own(this, deploymentId);
+    return (await deployments(this)).deleteDeployment(deploymentId, clerkId);
   }
 
   async updateDeploymentImage(deploymentId: string, image: string, clerkId: string) {
-    await this.own(deploymentId);
-    return (await this.deployments()).updateDeploymentImage(deploymentId, image, clerkId);
+    await own(this, deploymentId);
+    return (await deployments(this)).updateDeploymentImage(deploymentId, image, clerkId);
   }
 
   async updateStartCommand(deploymentId: string, startCommand: string | null, clerkId: string) {
-    await this.own(deploymentId);
-    return (await this.deployments()).updateDeploymentBuildConfig(
+    await own(this, deploymentId);
+    return (await deployments(this)).updateDeploymentBuildConfig(
       deploymentId,
       { startCommand },
       clerkId
@@ -145,18 +153,16 @@ export class ProjectsDoorV1 {
   }
 
   async updateDeploymentEnvVars(deploymentId: string, env: EnvWrite, clerkId: string) {
-    await this.own(deploymentId);
-    return (await this.deployments()).updateDeploymentEnvVars(deploymentId, env, clerkId);
+    await own(this, deploymentId);
+    return (await deployments(this)).updateDeploymentEnvVars(deploymentId, env, clerkId);
   }
-
-  // Replaces the full volume list: add, resize or remove by sending the new set.
   async updateDeploymentVolumes(
     deploymentId: string,
     volumes: DeploymentVolumes,
     clerkId: string
   ) {
-    await this.own(deploymentId);
-    return (await this.deployments()).updateDeploymentVolumes(deploymentId, volumes, clerkId);
+    await own(this, deploymentId);
+    return (await deployments(this)).updateDeploymentVolumes(deploymentId, volumes, clerkId);
   }
 
   async getPodLogs(
@@ -164,9 +170,9 @@ export class ProjectsDoorV1 {
     podName: string,
     opts: { container?: string; tailLines?: number; previous?: boolean; sinceSeconds?: number } = {}
   ) {
-    const { namespace } = await this.ownPod(deploymentId, podName);
+    const { namespace } = await ownPod(this, deploymentId, podName);
     const { K8sWorkloadService } = await import('../../kubernetes/k8s-workload.service.js');
-    const workload: K8sWorkloadService = this.moduleRef.get(K8sWorkloadService, { strict: false });
+    const workload: K8sWorkloadService = state(this).moduleRef.get(K8sWorkloadService, { strict: false });
     return workload.getPodLogs(
       podName,
       namespace,
@@ -176,21 +182,19 @@ export class ProjectsDoorV1 {
       opts.sinceSeconds
     );
   }
-
-  // One-shot command, no websocket for the caller. A string runs under /bin/sh -c.
   async execInPod(
     deploymentId: string,
     podName: string,
     command: string | string[],
     opts: { container?: string; timeoutMs?: number; stdin?: string | Buffer } = {}
   ): Promise<PodExecResult> {
-    this.requireWrite();
-    const { namespace } = await this.ownPod(deploymentId, podName);
+    requireWrite(this);
+    const { namespace } = await ownPod(this, deploymentId, podName);
     const cmd = Array.isArray(command) ? command : ['/bin/sh', '-c', command];
     if (cmd.length === 0 || (typeof command === 'string' && !command.trim())) {
       throw new Error('command is required');
     }
-    return this.runExec(namespace, podName, cmd, opts);
+    return runExec(this, namespace, podName, cmd, opts);
   }
 
   async listPodFiles(deploymentId: string, podName: string, dir: string, container?: string) {
@@ -228,8 +232,6 @@ export class ProjectsDoorV1 {
     if (res.exitCode !== 0) throw new Error(res.stderr.trim() || `cannot read ${path}`);
     return Buffer.from(res.stdout.replace(/\s+/g, ''), 'base64');
   }
-
-  // Creates or overwrites; covers both edit and upload.
   async writePodFile(
     deploymentId: string,
     podName: string,
@@ -260,18 +262,15 @@ export class ProjectsDoorV1 {
     });
     if (res.exitCode !== 0) throw new Error(res.stderr.trim() || `cannot delete ${path}`);
   }
-
-  // Attaches to the container's PID 1 console (kubectl attach). Needs the
-  // container to run with stdin/tty for input to reach it.
   async attachConsole(
     deploymentId: string,
     podName: string,
     opts: { container?: string; tty?: boolean } = {}
   ): Promise<PtyHandle> {
-    this.requireWrite();
-    const { namespace } = await this.ownPod(deploymentId, podName);
-    const kc = await this.kubeConfig();
-    const container = opts.container || (await this.firstContainer(kc, namespace, podName));
+    requireWrite(this);
+    const { namespace } = await ownPod(this, deploymentId, podName);
+    const kc = await kubeConfig(this);
+    const container = opts.container || (await firstContainer(kc, namespace, podName));
     const tty = opts.tty ?? true;
     const stdin = new PassThrough();
     const output = new PassThrough();
@@ -287,9 +286,15 @@ export class ProjectsDoorV1 {
     const exited = new Promise<{ ok: boolean; message: string | null }>((resolve) => {
       ws.on('close', () => {
         output.end();
+        stdin.destroy();
         resolve({ ok: true, message: null });
       });
-      ws.on('error', (err: Error) => resolve({ ok: false, message: err.message }));
+      ws.on('error', (err: Error) => {
+        output.end();
+        stdin.destroy();
+        ws.close();
+        resolve({ ok: false, message: err.message });
+      });
     });
     return {
       stdin,
@@ -307,13 +312,13 @@ export class ProjectsDoorV1 {
   }
 
   async rebuildDeployment(...args: Parameters<Rebuild>): Promise<Awaited<ReturnType<Rebuild>>> {
-    return (await this.deployments()).rebuildDeployment(...args);
+    return (await deployments(this)).rebuildDeployment(...args);
   }
 
   async setDeploymentBranch(deploymentId: string, branch: string): Promise<void> {
-    this.requireWrite();
+    requireWrite(this);
     if (!isSafeGitRef(branch)) throw new Error('Invalid branch name');
-    await this.prisma.deployment.update({
+    await state(this).prisma.deployment.update({
       where: { id: deploymentId },
       data: { githubBranch: branch }
     });
@@ -322,140 +327,153 @@ export class ProjectsDoorV1 {
   async createEnvironment(
     ...args: Parameters<CreateEnvironment>
   ): Promise<Awaited<ReturnType<CreateEnvironment>>> {
-    return (await this.environments()).createEnvironment(...args);
+    return (await environments(this)).createEnvironment(...args);
   }
 
   async deleteEnvironment(
     ...args: Parameters<DeleteEnvironment>
   ): Promise<Awaited<ReturnType<DeleteEnvironment>>> {
-    return (await this.environments()).deleteEnvironment(...args);
+    return (await environments(this)).deleteEnvironment(...args);
   }
 
   async deleteEnvironmentFromCluster(
     ...args: Parameters<DeleteFromCluster>
   ): Promise<Awaited<ReturnType<DeleteFromCluster>>> {
-    return (await this.environments()).deleteEnvironmentFromCluster(...args);
+    return (await environments(this)).deleteEnvironmentFromCluster(...args);
   }
 
   async createAutoIngressForDeployment(
     ...args: Parameters<AutoIngress>
   ): Promise<Awaited<ReturnType<AutoIngress>>> {
-    this.requireWrite();
+    requireWrite(this);
     const { IngressService } = await import('../../projects/ingress.service.js');
-    return this.moduleRef
+    return state(this).moduleRef
       .get(IngressService, { strict: false })
       .createAutoIngressForDeployment(...args);
   }
 
-  private requireWrite(): void {
-    if (!this.graft.manifest!.capabilities.includes('projects.write')) {
-      throw new Error(
-        `graft ${this.graft.id} needs the "projects.write" capability to change projects`
-      );
-    }
-  }
+}
 
-  private async stamp(created: unknown): Promise<void> {
-    const id = (created as { id?: string } | null)?.id;
-    if (!id) return;
-    await this.prisma.deployment.update({
-      where: { id },
-      data: { createdByGraft: this.graft.id }
-    });
+function requireWrite(door: ProjectsDoorV1): void {
+  if (!state(door).graft.manifest!.capabilities.includes('projects.write')) {
+    throw new Error(
+      `graft ${state(door).graft.id} needs the "projects.write" capability to change projects`
+    );
   }
+}
 
-  private async own(deploymentId: string): Promise<{ id: string; namespace: string }> {
-    const deployment = await this.prisma.deployment.findUnique({
-      where: { id: deploymentId },
-      select: { id: true, namespace: true, createdByGraft: true }
-    });
-    if (!deployment || deployment.createdByGraft !== this.graft.id) {
-      throw new Error(`graft ${this.graft.id} did not create deployment ${deploymentId}`);
-    }
-    return deployment;
+async function own(door: ProjectsDoorV1, deploymentId: string): Promise<{ id: string; namespace: string }> {
+  const deployment = await state(door).prisma.deployment.findUnique({
+    where: { id: deploymentId },
+    select: { id: true, namespace: true, createdByGraft: true }
+  });
+  if (!deployment || deployment.createdByGraft !== state(door).graft.id) {
+    throw new Error(`graft ${state(door).graft.id} did not create deployment ${deploymentId}`);
   }
+  return deployment;
+}
 
-  private async ownPod(deploymentId: string, podName: string): Promise<{ namespace: string }> {
-    const { namespace } = await this.own(deploymentId);
-    const pod = await this.prisma.k8sObject.findFirst({
-      where: { kind: 'Pod', deploymentId, namespace, name: podName },
-      select: { name: true }
-    });
-    if (!pod) throw new Error(`pod ${podName} does not belong to deployment ${deploymentId}`);
-    return { namespace };
-  }
+async function ownPod(door: ProjectsDoorV1, deploymentId: string, podName: string): Promise<{ namespace: string }> {
+  const { namespace } = await own(door, deploymentId);
+  const pod = await state(door).prisma.k8sObject.findFirst({
+    where: { kind: 'Pod', deploymentId, namespace, name: podName },
+    select: { name: true }
+  });
+  if (!pod) throw new Error(`pod ${podName} does not belong to deployment ${deploymentId}`);
+  return { namespace };
+}
 
-  private async kubeConfig(): Promise<k8s.KubeConfig> {
-    const { KubernetesService } = await import('../../kubernetes/kubernetes.service.js');
-    const kube: KubernetesService = this.moduleRef.get(KubernetesService, { strict: false });
-    kube.ensureKubeConfig();
-    return kube.kc!;
-  }
+async function kubeConfig(door: ProjectsDoorV1): Promise<k8s.KubeConfig> {
+  const { KubernetesService } = await import('../../kubernetes/kubernetes.service.js');
+  const kube: KubernetesService = state(door).moduleRef.get(KubernetesService, { strict: false });
+  kube.ensureKubeConfig();
+  return kube.kc!;
+}
 
-  private async firstContainer(kc: k8s.KubeConfig, namespace: string, pod: string) {
-    const { body } = await kc.makeApiClient(k8s.CoreV1Api).readNamespacedPod(pod, namespace);
-    const name = body.spec?.containers?.[0]?.name;
-    if (!name) throw new Error(`pod ${pod} has no containers`);
-    return name;
-  }
+async function firstContainer(kc: k8s.KubeConfig, namespace: string, pod: string) {
+  const { body } = await kc.makeApiClient(k8s.CoreV1Api).readNamespacedPod(pod, namespace);
+  const name = body.spec?.containers?.[0]?.name;
+  if (!name) throw new Error(`pod ${pod} has no containers`);
+  return name;
+}
 
-  private async runExec(
-    namespace: string,
-    pod: string,
-    cmd: string[],
-    opts: { container?: string; timeoutMs?: number; stdin?: string | Buffer }
-  ): Promise<PodExecResult> {
-    const kc = await this.kubeConfig();
-    const container = opts.container || (await this.firstContainer(kc, namespace, pod));
-    const timeoutMs = Math.min(Math.max(opts.timeoutMs ?? 60_000, 1_000), 300_000);
-    const out: Buffer[] = [];
-    const err: Buffer[] = [];
+async function runExec(door: ProjectsDoorV1, 
+  namespace: string,
+  pod: string,
+  cmd: string[],
+  opts: { container?: string; timeoutMs?: number; stdin?: string | Buffer }
+): Promise<PodExecResult> {
+  const kc = await kubeConfig(door);
+  const container = opts.container || (await firstContainer(kc, namespace, pod));
+  const requested = Number(opts.timeoutMs);
+  const timeoutMs = Number.isFinite(requested)
+    ? Math.min(Math.max(requested, 1_000), 300_000)
+    : 60_000;
+  const out: Buffer[] = [];
+  const err: Buffer[] = [];
+  let truncated = false;
+  const collect = (into: Buffer[]) => {
+    const stream = new PassThrough();
     let size = 0;
-    const collect = (into: Buffer[]) => {
-      const stream = new PassThrough();
-      stream.on('data', (c: Buffer) => {
-        if (size >= MAX_EXEC_OUTPUT) return;
-        size += c.length;
-        into.push(c);
-      });
-      return stream;
-    };
-    const stdin = opts.stdin === undefined ? null : new PassThrough();
-    return new Promise<PodExecResult>((resolve, reject) => {
-      let socket: { close(): void } | undefined;
-      const timer = setTimeout(() => {
-        socket?.close();
-        reject(new Error(`exec timed out after ${timeoutMs}ms`));
-      }, timeoutMs);
-      new k8s.Exec(kc)
-        .exec(namespace, pod, container, cmd, collect(out), collect(err), stdin, false, (status) => {
-          clearTimeout(timer);
-          resolve({
-            exitCode: exitCodeOf(status),
-            stdout: Buffer.concat(out).toString('utf-8'),
-            stderr: Buffer.concat(err).toString('utf-8')
-          });
-        })
-        .then((ws) => {
-          socket = ws;
-          if (stdin) stdin.end(opts.stdin);
-        })
-        .catch((e: Error) => {
-          clearTimeout(timer);
-          reject(e);
-        });
+    stream.on('data', (c: Buffer) => {
+      if (size + c.length > MAX_EXEC_OUTPUT) {
+        truncated = true;
+        return;
+      }
+      size += c.length;
+      into.push(c);
     });
-  }
+    return stream;
+  };
+  const stdin = opts.stdin === undefined ? null : new PassThrough();
+  return new Promise<PodExecResult>((resolve, reject) => {
+    let socket: { close(): void } | undefined;
+    let settled = false;
+    const fail = (e: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      socket?.close();
+      reject(e);
+    };
+    const timer = setTimeout(
+      () => fail(new Error(`exec timed out after ${timeoutMs}ms`)),
+      timeoutMs
+    );
+    new k8s.Exec(kc)
+      .exec(namespace, pod, container, cmd, collect(out), collect(err), stdin, false, (status) => {
+        if (settled) return;
+        if (truncated) {
+          fail(new Error(`exec output exceeded ${MAX_EXEC_OUTPUT} bytes`));
+          return;
+        }
+        settled = true;
+        clearTimeout(timer);
+        resolve({
+          exitCode: exitCodeOf(status),
+          stdout: Buffer.concat(out).toString('utf-8'),
+          stderr: Buffer.concat(err).toString('utf-8')
+        });
+      })
+      .then((ws) => {
+        socket = ws;
+        ws.on('close', () =>
+          setImmediate(() => fail(new Error('exec connection closed without a status')))
+        );
+        if (stdin) stdin.end(opts.stdin);
+      })
+      .catch((e: Error) => fail(e));
+  });
+}
 
-  private async deployments(write = true): Promise<DeploymentsService> {
-    if (write) this.requireWrite();
-    const { DeploymentsService } = await import('../../projects/deployments.service.js');
-    return this.moduleRef.get(DeploymentsService, { strict: false });
-  }
+async function deployments(door: ProjectsDoorV1, write = true): Promise<DeploymentsService> {
+  if (write) requireWrite(door);
+  const { DeploymentsService } = await import('../../projects/deployments.service.js');
+  return state(door).moduleRef.get(DeploymentsService, { strict: false });
+}
 
-  private async environments(): Promise<EnvironmentsService> {
-    this.requireWrite();
-    const { EnvironmentsService } = await import('../../projects/environments.service.js');
-    return this.moduleRef.get(EnvironmentsService, { strict: false });
-  }
+async function environments(door: ProjectsDoorV1): Promise<EnvironmentsService> {
+  requireWrite(door);
+  const { EnvironmentsService } = await import('../../projects/environments.service.js');
+  return state(door).moduleRef.get(EnvironmentsService, { strict: false });
 }

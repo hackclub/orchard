@@ -6709,6 +6709,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       placementOverride?: unknown;
       imagePullPolicy?: 'Always' | 'IfNotPresent';
       pdbMinAvailable?: number;
+      createdByGraft?: string;
       // Overrides the image's CMD. An image-source deployment never runs a
       // builder, so this is the only way to run `redis-server --appendonly
       // yes` instead of whatever the image starts with.
@@ -6921,6 +6922,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
         const deployment = await tx.deployment.create({
           data: {
             projectId: project.id,
+            createdByGraft: data.createdByGraft ?? null,
             environmentId: environment.id,
             name,
             namespace: environment.namespace,
@@ -7106,6 +7108,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     projectId: string,
     data: {
       name: string;
+      createdByGraft?: string;
       repoUrl?: string;
       githubRepo?: string;
       gitConnectionId?: string | null;
@@ -7430,6 +7433,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     const deployment = await this.prisma.deployment.create({
       data: {
         projectId: project.id,
+        createdByGraft: data.createdByGraft ?? null,
         environmentId: environment.id,
         name,
         namespace: environment.namespace,

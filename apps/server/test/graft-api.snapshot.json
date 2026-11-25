@@ -55,14 +55,7 @@
       "status": "stable",
       "capability": null,
       "methods": {},
-      "properties": [
-        "apiBase",
-        "id",
-        "manifest",
-        "role",
-        "schema",
-        "version"
-      ]
+      "properties": ["apiBase", "id", "manifest", "role", "schema", "version"]
     },
     "db@1": {
       "status": "stable",
@@ -71,10 +64,7 @@
         "pool": 0,
         "query": 2
       },
-      "properties": [
-        "role",
-        "schema"
-      ]
+      "properties": ["role", "schema"]
     },
     "events@1": {
       "status": "stable",
@@ -99,9 +89,7 @@
       "methods": {
         "isEnabled": 2
       },
-      "properties": [
-        "configured"
-      ]
+      "properties": ["configured"]
     },
     "github@1": {
       "status": "stable",
@@ -112,9 +100,7 @@
         "repoToken": 3,
         "userToken": 1
       },
-      "properties": [
-        "github"
-      ]
+      "properties": ["github"]
     },
     "http@1": {
       "status": "stable",
@@ -136,10 +122,7 @@
         "registerEngineShard": 1,
         "registerMirrorShard": 1
       },
-      "properties": [
-        "kc",
-        "kubernetes"
-      ]
+      "properties": ["kc", "kubernetes"]
     },
     "metrics@1": {
       "status": "stable",
@@ -148,10 +131,7 @@
         "escapeLabel": 1,
         "queryInstant": 1
       },
-      "properties": [
-        "configured",
-        "vm"
-      ]
+      "properties": ["configured", "vm"]
     },
     "notifications@1": {
       "status": "stable",
@@ -175,27 +155,18 @@
         "deleteEnvironment": 0,
         "deleteEnvironmentFromCluster": 0,
         "deletePodFile": 4,
-        "deployments": 0,
-        "environments": 0,
         "execInPod": 3,
-        "firstContainer": 3,
         "getDeployment": 1,
         "getDeploymentPods": 1,
         "getPodLogs": 2,
-        "kubeConfig": 0,
         "listOwnDeployments": 0,
         "listPodFiles": 4,
         "onEnvironmentEnvChanged": 1,
-        "own": 1,
-        "ownPod": 2,
         "readPodFile": 4,
         "rebuildDeployment": 0,
-        "requireWrite": 0,
         "restartDeployment": 2,
-        "runExec": 4,
         "scaleDeployment": 3,
         "setDeploymentBranch": 2,
-        "stamp": 1,
         "startDeployment": 2,
         "stopDeployment": 2,
         "updateDeploymentEnvVars": 3,
@@ -214,10 +185,7 @@
         "consume": 2,
         "define": 3
       },
-      "properties": [
-        "limits",
-        "throttle"
-      ]
+      "properties": ["limits", "throttle"]
     },
     "secrets@1": {
       "status": "stable",
@@ -232,9 +200,7 @@
         "open": 1,
         "seal": 1
       },
-      "properties": [
-        "enabled"
-      ]
+      "properties": ["enabled"]
     },
     "settings@1": {
       "status": "stable",
@@ -249,9 +215,7 @@
         "validate": 2,
         "value": 2
       },
-      "properties": [
-        "generation"
-      ]
+      "properties": ["generation"]
     },
     "storage@1": {
       "status": "stable",
@@ -261,10 +225,7 @@
         "owns": 1,
         "upload": 1
       },
-      "properties": [
-        "configured",
-        "publicBase"
-      ]
+      "properties": ["configured", "publicBase"]
     },
     "users@1": {
       "status": "stable",
