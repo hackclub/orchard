@@ -2063,7 +2063,26 @@ exit $rc`
           } as k8s.V1Container;
         })();
 
-    const pusherImageRef = fullImageName.replace(/^[^/]+/, this.pusherRegistryHost);
+    // Pusher container, only used when sidecarPushEnabled. Polls for a
+    // done-marker written by BuildKit, then `skopeo copy`s the OCI layout at
+    // /output/image (or Depot's tarball at /output/image.tar for Super Builds)
+    // to the registry.
+    //
+    // Why run BuildKit + pusher as PARALLEL main containers (not init→main):
+    //   Under runtimeClassName=kata, transitioning from the last init
+    //   container to the first main container triggers a 429 from the
+    //   kata-shim's task-create RPC: the kata-agent inside the VM
+    //   doesn't accept new tasks during sandbox-state-transition. Running
+    //   both as `containers:` avoids that transition entirely; both tasks
+    //   start once at pod startup, share /output via emptyDir, and
+    //   coordinate via a filesystem marker.
+    //
+    // Threat model still holds: BuildKit and pusher have separate mount
+    // namespaces inside the Kata VM, so a malicious Dockerfile RUN in
+    // BuildKit cannot read the pusher container's
+    // /root/.docker/config.json.
+    // Daemon mode pushes from this pod too: the shared daemon holds no registry creds.
+    const pusherImageRef =fullImageName.replace(/^[^/]+/, this.pusherRegistryHost);
     const pusherSource = buildWithDepot ? 'oci-archive:/output/image.tar' : 'oci:/output/image';
     const pusherContainer: k8s.V1Container | null =
       (buildkitContainer || buildWithDepot) && this.sidecarPushEnabled
