@@ -202,12 +202,12 @@ export class ProjectsDoorV1 {
     const res = await this.execInPod(
       deploymentId,
       podName,
-      `cd ${shellQuote(dir)} && for f in .* *; do [ "$f" = . ] || [ "$f" = .. ] || [ ! -e "$f" ] && [ ! -L "$f" ] && continue; if [ -d "$f" ]; then t=dir; elif [ -f "$f" ]; then t=file; else t=other; fi; printf '%s\\t%s\\t%s\\n' "$t" "$(wc -c < "$f" 2>/dev/null || echo 0)" "$f"; done`,
+      `cd ${shellQuote(dir)} && for f in .* *; do [ "$f" = . ] || [ "$f" = .. ] || [ ! -e "$f" ] && [ ! -L "$f" ] && continue; if [ -d "$f" ]; then t=dir; elif [ -f "$f" ]; then t=file; else t=other; fi; printf '%s\\t%s\\t%s\\000' "$t" "$(wc -c < "$f" 2>/dev/null || echo 0)" "$f"; done`,
       { container }
     );
     if (res.exitCode !== 0) throw new Error(res.stderr.trim() || `cannot list ${dir}`);
     return res.stdout
-      .split('\n')
+      .split('\0')
       .filter(Boolean)
       .map((line): PodFileEntry => {
         const [type, size, ...name] = line.split('\t');
@@ -273,6 +273,7 @@ export class ProjectsDoorV1 {
     const container = opts.container || (await firstContainer(kc, namespace, podName));
     const tty = opts.tty ?? true;
     const stdin = new PassThrough();
+    stdin.on('error', () => {});
     const output = new PassThrough();
     const ws = await new k8s.Attach(kc).attach(
       namespace,
