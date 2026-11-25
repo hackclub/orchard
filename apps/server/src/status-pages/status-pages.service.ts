@@ -50,6 +50,7 @@ const RESERVED_SLUGS = new Set(['new', 'edit', 'resolve', 'api', 'admin']);
 const RENDER_CACHE_MS = 15_000;
 const HISTORY_DAYS = 30;
 const MAX_INCIDENTS = 20;
+const TRANSITIONS_PER_DEPLOYMENT = 2000;
 const MAX_PAGES_PER_ORG = 10;
 
 interface Rendered {
@@ -353,16 +354,20 @@ export class StatusPagesService {
           where: { targetId: { in: deploymentIds }, notifiedAt: { not: null }, okSince: null },
           select: { targetId: true }
         }),
-        this.prisma.podTransition.findMany({
-          where: {
-            deploymentId: { in: deploymentIds },
-            at: { gte: since },
-            toStatus: { in: ['crashing', 'failed', 'ready'] }
-          },
-          select: { deploymentId: true, podName: true, toStatus: true, at: true },
-          orderBy: { at: 'desc' },
-          take: 5000
-        }),
+        Promise.all(
+          deploymentIds.map((deploymentId) =>
+            this.prisma.podTransition.findMany({
+              where: {
+                deploymentId,
+                at: { gte: since },
+                toStatus: { in: ['crashing', 'failed', 'ready'] }
+              },
+              select: { deploymentId: true, podName: true, toStatus: true, at: true },
+              orderBy: { at: 'desc' },
+              take: TRANSITIONS_PER_DEPLOYMENT
+            })
+          )
+        ).then((rows) => rows.flat()),
         this.prisma.database.findMany({
           where: { id: { in: databaseIds }, project: { organizationId: page.organizationId } },
           select: { id: true, name: true, status: true }

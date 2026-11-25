@@ -229,23 +229,30 @@ test('a page saved with a short slug can still be edited without renaming it', a
   assert.equal(page.title, 'New title');
 });
 
-test('a busy month keeps the newest pod transitions, so a fresh outage still shows', async () => {
-  const deploymentId = 'd0000000-0000-0000-0000-000000000001';
+test('a noisy app cannot push a quiet app out of its own outage history', async () => {
+  const noisy = 'd0000000-0000-0000-0000-000000000001';
+  const quiet = 'd0000000-0000-0000-0000-000000000002';
   const now = Date.now();
-  const transitions = [];
+  const rows: { deploymentId: string; podName: string; toStatus: string; at: Date }[] = [];
   for (let i = 0; i < 6000; i++) {
-    transitions.push({
-      deploymentId,
+    rows.push({
+      deploymentId: noisy,
       podName: 'web-1',
       toStatus: i % 2 ? 'ready' : 'crashing',
-      at: new Date(now - 29 * 24 * 3_600_000 + i * 1_000)
+      at: new Date(now - 60 * 60_000 + i * 500)
     });
   }
-  transitions.push({
-    deploymentId,
-    podName: 'web-1',
+  rows.push({
+    deploymentId: quiet,
+    podName: 'api-1',
     toStatus: 'crashing',
     at: new Date(now - 3 * 3_600_000)
+  });
+  rows.push({
+    deploymentId: quiet,
+    podName: 'api-1',
+    toStatus: 'ready',
+    at: new Date(now - 2 * 3_600_000)
   });
   const none = async () => [];
   const prisma = {
@@ -257,25 +264,34 @@ test('a busy month keeps the newest pod transitions, so a fresh outage still sho
         isPublic: true,
         organizationId: 'org',
         organization: { name: 'Acme' },
-        components: [{ kind: 'deployment', resourceId: deploymentId }]
+        components: [
+          { kind: 'deployment', resourceId: noisy },
+          { kind: 'deployment', resourceId: quiet }
+        ]
       })
     },
     deployment: {
-      findMany: async () => [
-        {
-          id: deploymentId,
-          name: 'web',
+      findMany: async () =>
+        [noisy, quiet].map((id) => ({
+          id,
+          name: id,
           displayName: null,
           status: 'running',
           stopped: false,
           replicas: 1
-        }
-      ]
+        }))
     },
     podTransition: {
-      findMany: async (args: { orderBy: { at: 'asc' | 'desc' }; take: number }) => {
+      findMany: async (args: {
+        where: { deploymentId: string | { in: string[] } };
+        orderBy: { at: 'asc' | 'desc' };
+        take: number;
+      }) => {
+        const want = args.where.deploymentId;
+        const ids = typeof want === 'string' ? [want] : want.in;
         const dir = args.orderBy.at === 'desc' ? -1 : 1;
-        return [...transitions]
+        return rows
+          .filter((r) => ids.includes(r.deploymentId))
           .sort((a, b) => dir * (a.at.getTime() - b.at.getTime()))
           .slice(0, args.take);
       }
@@ -288,6 +304,7 @@ test('a busy month keeps the newest pod transitions, so a fresh outage still sho
   };
   const service = new StatusPagesService(prisma as any, {} as any, {} as any);
   const page = await service.render('acme');
-  assert.equal(Date.parse(page!.incidents[0].startedAt), now - 3 * 3_600_000);
-  assert.notEqual(page!.components[0].days.at(-1)?.status, 'operational');
+  const quietIncidents = page!.incidents.filter((i) => i.componentId === `deployment:${quiet}`);
+  assert.equal(quietIncidents.length, 1);
+  assert.equal(Date.parse(quietIncidents[0].startedAt), now - 3 * 3_600_000);
 });
