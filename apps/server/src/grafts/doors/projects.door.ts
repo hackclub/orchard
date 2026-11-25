@@ -184,6 +184,7 @@ export class ProjectsDoorV1 {
     command: string | string[],
     opts: { container?: string; timeoutMs?: number; stdin?: string | Buffer } = {}
   ): Promise<PodExecResult> {
+    this.requireWrite();
     const { namespace } = await this.ownPod(deploymentId, podName);
     const cmd = Array.isArray(command) ? command : ['/bin/sh', '-c', command];
     if (cmd.length === 0 || (typeof command === 'string' && !command.trim())) {
@@ -267,6 +268,7 @@ export class ProjectsDoorV1 {
     podName: string,
     opts: { container?: string; tty?: boolean } = {}
   ): Promise<PtyHandle> {
+    this.requireWrite();
     const { namespace } = await this.ownPod(deploymentId, podName);
     const kc = await this.kubeConfig();
     const container = opts.container || (await this.firstContainer(kc, namespace, podName));
