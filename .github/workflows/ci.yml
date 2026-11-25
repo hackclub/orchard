@@ -298,6 +298,7 @@ jobs:
           TEST_REDIS_URL: redis://localhost:16379
           TEST_BASE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || '' }}
         run: |
+          sudo apt-get install -y -qq busybox >/dev/null
           export PATH="$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1):$PATH"
           pnpm --filter server test
       - name: Greenhouse graft tests
