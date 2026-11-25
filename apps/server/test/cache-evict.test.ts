@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   mkdtempSync,
   mkdirSync,
@@ -8,7 +8,10 @@ import {
   rmSync,
   readdirSync,
   utimesSync,
-  chmodSync
+  chmodSync,
+  readFileSync,
+  statSync,
+  symlinkSync
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -36,7 +39,8 @@ const DAY = 86400;
 function runScript(
   root: string,
   opts: Partial<CacheEvictOptions>,
-  overrides: Record<string, string> = {}
+  overrides: Record<string, string> = {},
+  env: NodeJS.ProcessEnv = process.env
 ) {
   let script = cacheEvictScript({ ...OPTS, ...opts });
   script = script.replace('CACHE_ROOT="/cache"', `CACHE_ROOT="${root}"`);
@@ -45,7 +49,8 @@ function runScript(
   }
   const out = execFileSync('sh', ['-c', script], {
     encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    env
   });
   return { out, survivors: readdirSync(root).sort() };
 }
@@ -169,6 +174,68 @@ test(
     });
   }
 );
+
+const busybox = spawnSync('sh', ['-c', 'command -v busybox'], { encoding: 'utf8' }).stdout.trim();
+
+for (const flavour of ['host', 'busybox'] as const) {
+  test(
+    `hands the tenant directory to the build uid with ${flavour} find`,
+    { skip: flavour === 'busybox' && !busybox ? 'busybox is not installed' : false },
+    () => {
+      withRoot((root) => {
+        seedTenant(root, 'ysws-mine', 60);
+        const bin = mkdtempSync(join(tmpdir(), 'evict-bin-'));
+        try {
+          const log = join(bin, 'chown.log');
+          writeFileSync(join(bin, 'chown'), `#!/bin/sh\necho "$@" >> "${log}"\n`, { mode: 0o755 });
+          if (flavour === 'busybox') symlinkSync(busybox, join(bin, 'find'));
+          const { out } = runScript(
+            root,
+            { chownUid: 4242 },
+            { HIGH: '101' },
+            {
+              ...process.env,
+              PATH: `${bin}:${process.env.PATH}`
+            }
+          );
+          assert.doesNotMatch(out, /could not hand/);
+          const chowned = readFileSync(log, 'utf8');
+          assert.match(chowned, /^-h 4242:4242 /m);
+          for (const path of ['ysws-mine', 'ysws-mine/img', 'ysws-mine/img/index.json']) {
+            assert.ok(chowned.includes(join(root, path)), `${path} was not handed over`);
+          }
+          assert.equal(statSync(join(root, 'ysws-mine')).mode & 0o777, 0o770);
+        } finally {
+          rmSync(bin, { recursive: true, force: true });
+        }
+      });
+    }
+  );
+}
+
+test('still locks the tenant directory to 0770 and warns when chown fails', () => {
+  withRoot((root) => {
+    seedTenant(root, 'ysws-mine', 60);
+    chmodSync(join(root, 'ysws-mine'), 0o755);
+    const bin = mkdtempSync(join(tmpdir(), 'evict-bin-'));
+    try {
+      writeFileSync(join(bin, 'chown'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+      const { out } = runScript(
+        root,
+        { chownUid: 4242 },
+        { HIGH: '101' },
+        {
+          ...process.env,
+          PATH: `${bin}:${process.env.PATH}`
+        }
+      );
+      assert.match(out, /WARNING: could not hand this build's cache directory to uid 4242/);
+      assert.equal(statSync(join(root, 'ysws-mine')).mode & 0o777, 0o770);
+    } finally {
+      rmSync(bin, { recursive: true, force: true });
+    }
+  });
+});
 
 test('mounts the cache at its root with no subPath, or it cannot start on a full volume', () => {
   const container = cacheEvictInitContainer(OPTS);

@@ -138,7 +138,7 @@ test('default build job is rootless, unprivileged and has no registry credential
   const mountPaths = (buildkit.volumeMounts ?? []).map((m) => m.mountPath);
   assert.ok(!mountPaths.includes('/root/.docker'));
   const evict = spec.initContainers!.find((c) => c.name === 'cache-evict')!;
-  assert.match(evict.args![0], /chown 1000:1000/);
+  assert.match(evict.args![0], /chown -h 1000:1000/);
   assert.ok(
     !JSON.stringify(spec).includes('"privileged":true'),
     'no container in the default build pod may be privileged'

@@ -137,8 +137,13 @@ fi
 ${
   opts.chownUid === undefined
     ? ''
-    : `find "$CACHE_ROOT/$SELF" ! -uid ${opts.chownUid} -exec chown ${opts.chownUid}:${opts.chownUid} {} + 2>/dev/null || true
-chmod 0770 "$CACHE_ROOT/$SELF" 2>/dev/null || true
+    : `CHOWN_FAILED=0
+CHMOD_FAILED=0
+find "$CACHE_ROOT/$SELF" \\( ! -user ${opts.chownUid} -o ! -group ${opts.chownUid} \\) -exec chown -h ${opts.chownUid}:${opts.chownUid} {} + || CHOWN_FAILED=1
+chmod 0770 "$CACHE_ROOT/$SELF" || CHMOD_FAILED=1
+if [ "$CHOWN_FAILED" -ne 0 ] || [ "$CHMOD_FAILED" -ne 0 ]; then
+  echo "WARNING: could not hand this build's cache directory to uid ${opts.chownUid}"
+fi
 `
 }
 echo "=== Shared build cache at $(usage)% after eviction ==="
