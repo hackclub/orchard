@@ -31201,6 +31201,10 @@
                         "null"
                       ]
                     },
+                    "pending": {
+                      "description": "A pull was started and the pods have not been checked since.",
+                      "type": "boolean"
+                    },
                     "runningDigest": {
                       "description": "The digest the pods run.",
                       "type": [
@@ -31231,6 +31235,7 @@
                     "runningDigest",
                     "latestDigest",
                     "updateAvailable",
+                    "pending",
                     "checkedAt",
                     "error",
                     "updatedAt"
@@ -31335,6 +31340,10 @@
                         "null"
                       ]
                     },
+                    "pending": {
+                      "description": "A pull was started and the pods have not been checked since.",
+                      "type": "boolean"
+                    },
                     "runningDigest": {
                       "description": "The digest the pods run.",
                       "type": [
@@ -31365,6 +31374,7 @@
                     "runningDigest",
                     "latestDigest",
                     "updateAvailable",
+                    "pending",
                     "checkedAt",
                     "error",
                     "updatedAt"
@@ -31462,6 +31472,10 @@
                         "null"
                       ]
                     },
+                    "pending": {
+                      "description": "A pull was started and the pods have not been checked since.",
+                      "type": "boolean"
+                    },
                     "runningDigest": {
                       "description": "The digest the pods run.",
                       "type": [
@@ -31492,6 +31506,7 @@
                     "runningDigest",
                     "latestDigest",
                     "updateAvailable",
+                    "pending",
                     "checkedAt",
                     "error",
                     "updatedAt"
@@ -31591,6 +31606,10 @@
                         "null"
                       ]
                     },
+                    "pending": {
+                      "description": "A pull was started and the pods have not been checked since.",
+                      "type": "boolean"
+                    },
                     "runningDigest": {
                       "description": "The digest the pods run.",
                       "type": [
@@ -31621,6 +31640,7 @@
                     "runningDigest",
                     "latestDigest",
                     "updateAvailable",
+                    "pending",
                     "checkedAt",
                     "error",
                     "updatedAt"

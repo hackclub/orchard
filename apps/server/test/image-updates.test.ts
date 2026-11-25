@@ -311,3 +311,50 @@ test('auto-update restarts once per new digest and skips a rollout already runni
   await svc.sweep();
   assert.deepEqual(restarts, ['tracked']);
 });
+
+test('a failed auto-update restart is recorded and not retried every sweep', async () => {
+  const tracked = fakeRow('tracked', { imageAutoUpdate: true });
+  const { svc, restarts } = service([tracked], async () => {
+    throw new Error('quota exceeded');
+  });
+  await svc.sweep();
+  assert.deepEqual(restarts, ['tracked']);
+  assert.equal(tracked.imageAttemptedDigest, NEW);
+  tracked.imageCheckedAt = new Date(0);
+  await svc.sweep();
+  assert.deepEqual(restarts, ['tracked']);
+});
+
+test('after a pull the running digest is observed, not assumed', async () => {
+  const tracked = fakeRow('tracked');
+  const { svc } = service([tracked]);
+  const status = await svc.updateNow('tracked', 'user');
+  assert.equal(status.pending, true);
+  assert.equal(status.updateAvailable, false);
+  assert.equal(tracked.imageRunningDigest, OLD);
+  assert.equal(tracked.imageCheckedAt, null);
+  await svc.sweep();
+  const after = await svc.status('tracked');
+  assert.equal(after.pending, false);
+  assert.equal(after.runningDigest, OLD);
+  assert.equal(after.updateAvailable, true);
+});
+
+test('a check that started before a rollout does not overwrite it', async () => {
+  const tracked = fakeRow('tracked', { imageCheckedRef: 'n8nio/n8n:latest' });
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  const { svc } = service([tracked]);
+  (svc as any).resolveDigest = async () => {
+    await gate;
+    return NEW;
+  };
+  const slow = svc.checkNow('tracked');
+  await new Promise((resolve) => setImmediate(resolve));
+  tracked.imageUpdatedAt = new Date();
+  tracked.imageCheckedAt = null;
+  release();
+  const status = await slow;
+  assert.equal(status.pending, true);
+  assert.equal(tracked.imageCheckedAt, null);
+});

@@ -272,8 +272,8 @@ export class ImageUpdatesService {
         : sameImage
           ? row.imageRunningDigest
           : null;
-    return (await this.prisma.deployment.update({
-      where: { id: row.id },
+    const written = await this.prisma.deployment.updateMany({
+      where: { id: row.id, imageUpdatedAt: row.imageUpdatedAt },
       data: {
         imageCheckedRef: image,
         imageLatestDigest: latestDigest,
@@ -281,9 +281,12 @@ export class ImageUpdatesService {
         imageCheckedAt: new Date(),
         imageCheckError: latest ? null : (failure ?? 'unknown'),
         ...(!sameImage && { imageAttemptedDigest: null })
-      },
-      select: ROW_SELECT
-    })) as Row;
+      }
+    });
+    return this.load(row.id).then((current) => {
+      if (written.count === 0) this.logger.debug(`image check for ${row.id} lost to a rollout`);
+      return current;
+    });
   }
 
   protected resolveDigest(
@@ -307,6 +310,10 @@ export class ImageUpdatesService {
 
   private async restartOnLatest(row: Row, userId: string | null): Promise<Row> {
     const before = row.imageRunningDigest;
+    await this.prisma.deployment.update({
+      where: { id: row.id },
+      data: { imageAttemptedDigest: row.imageLatestDigest }
+    });
     await this.k8sWorkload.restartDeployment(
       row.name,
       row.namespace,
@@ -314,11 +321,7 @@ export class ImageUpdatesService {
     );
     const updated = (await this.prisma.deployment.update({
       where: { id: row.id },
-      data: {
-        imageUpdatedAt: new Date(),
-        imageAttemptedDigest: row.imageLatestDigest,
-        ...(row.imageLatestDigest && { imageRunningDigest: row.imageLatestDigest })
-      },
+      data: { imageUpdatedAt: new Date(), imageCheckedAt: null },
       select: ROW_SELECT
     })) as Row;
     void this.log(row, 'deployment.image.pulled', userId, {

@@ -287,6 +287,7 @@ const imageUpdateStatus = z.object({
   runningDigest: z.string().nullable().describe('The digest the pods run.'),
   latestDigest: z.string().nullable().describe('The digest the tag points at in the registry.'),
   updateAvailable: z.boolean(),
+  pending: z.boolean().describe('A pull was started and the pods have not been checked since.'),
   checkedAt: z.string().nullable(),
   error: z.string().nullable().describe('Why the last registry check failed.'),
   updatedAt: z.string().nullable().describe('When the image was last pulled again.')

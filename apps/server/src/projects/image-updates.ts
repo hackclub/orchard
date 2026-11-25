@@ -33,6 +33,7 @@ export interface ImageUpdateStatus {
   runningDigest: string | null;
   latestDigest: string | null;
   updateAvailable: boolean;
+  pending: boolean;
   checkedAt: string | null;
   error: string | null;
   updatedAt: string | null;
@@ -58,8 +59,14 @@ function checkedForCurrentImage(row: ImageUpdateRow): boolean {
   return row.imageCheckedRef != null && row.imageCheckedRef === row.image;
 }
 
+export function rolloutPending(row: ImageUpdateRow): boolean {
+  if (!row.imageUpdatedAt) return false;
+  return !row.imageCheckedAt || row.imageCheckedAt < row.imageUpdatedAt;
+}
+
 export function isUpdateAvailable(row: ImageUpdateRow): boolean {
   if (imageTrackingBlocker(row) || row.stopped || !checkedForCurrentImage(row)) return false;
+  if (rolloutPending(row)) return false;
   return (
     row.imageLatestDigest != null &&
     row.imageRunningDigest != null &&
@@ -92,6 +99,7 @@ export function imageUpdateStatus(row: ImageUpdateRow): ImageUpdateStatus {
     runningDigest: current ? row.imageRunningDigest : null,
     latestDigest: current ? row.imageLatestDigest : null,
     updateAvailable: isUpdateAvailable(row),
+    pending: !blocker && rolloutPending(row),
     checkedAt: current ? (row.imageCheckedAt?.toISOString() ?? null) : null,
     error: current ? row.imageCheckError : null,
     updatedAt: row.imageUpdatedAt?.toISOString() ?? null

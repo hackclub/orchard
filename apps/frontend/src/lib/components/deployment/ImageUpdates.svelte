@@ -13,6 +13,7 @@
 		runningDigest: string | null;
 		latestDigest: string | null;
 		updateAvailable: boolean;
+		pending: boolean;
 		checkedAt: string | null;
 		error: string | null;
 		updatedAt: string | null;
@@ -151,6 +152,8 @@
 {#snippet newestHint()}
 	{#if stopped}
 		Start the app to check for a newer image
+	{:else if status?.pending}
+		Rolling out {short(status.latestDigest)}, checking the pods shortly
 	{:else if status?.error && !status.latestDigest}
 		Couldn't check: {failure(status.error)}
 	{:else if status?.updateAvailable}
