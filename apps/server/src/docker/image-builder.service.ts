@@ -2063,11 +2063,6 @@ exit $rc`
           } as k8s.V1Container;
         })();
 
-    // Pusher container, only used when sidecarPushEnabled. Polls for a
-    // done-marker written by BuildKit, then `skopeo copy`s the OCI layout at
-    // /output/image (or Depot's tarball at /output/image.tar for Super Builds)
-    // to the registry.
-    //
     // Why run BuildKit + pusher as PARALLEL main containers (not init→main):
     //   Under runtimeClassName=kata, transitioning from the last init
     //   container to the first main container triggers a 429 from the
