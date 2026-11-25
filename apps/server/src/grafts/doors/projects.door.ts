@@ -317,6 +317,7 @@ export class ProjectsDoorV1 {
 
   async setDeploymentBranch(deploymentId: string, branch: string): Promise<void> {
     requireWrite(this);
+    await own(this, deploymentId);
     if (!isSafeGitRef(branch)) throw new Error('Invalid branch name');
     await state(this).prisma.deployment.update({
       where: { id: deploymentId },
