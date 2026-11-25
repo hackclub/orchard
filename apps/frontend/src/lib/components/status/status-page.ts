@@ -101,7 +101,7 @@ export class StatusHttpError extends Error {
 export type StatusLoadResult =
 	| { kind: 'ok'; page: PublicStatusPage }
 	| { kind: 'missing' }
-	| { kind: 'failed'; message: string };
+	| { kind: 'failed'; message: string; cause: unknown };
 
 export function isTransientStatusError(e: unknown): boolean {
 	if (!(e instanceof StatusHttpError)) return true;
@@ -147,5 +147,5 @@ export async function loadStatusPage(
 			await sleep(delays[attempt]);
 		}
 	}
-	return { kind: 'failed', message: statusErrorMessage(last) };
+	return { kind: 'failed', message: statusErrorMessage(last), cause: last };
 }

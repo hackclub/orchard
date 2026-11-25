@@ -92,7 +92,9 @@ test('a network failure retries with backoff and renders once a request gets thr
 test('a network failure that outlasts the retries shows a plain line, not the browser error', async () => {
 	const { fetch, calls } = scripted([networkDown, networkDown, networkDown]);
 	const result = await loadStatusPage('/x', { fetch, sleep: async () => {}, delays: [1, 1] });
-	assert.deepEqual(result, { kind: 'failed', message: STATUS_UNREACHABLE });
+	assert.equal(result.kind, 'failed');
+	assert.equal(result.kind === 'failed' && result.message, STATUS_UNREACHABLE);
+	assert.ok(result.kind === 'failed' && result.cause instanceof TypeError);
 	assert.equal(calls.length, 3);
 	assert.ok(!STATUS_UNREACHABLE.includes('Failed to fetch'));
 });
@@ -120,7 +122,7 @@ test('a server error retries, a client error does not', async () => {
 		sleep: async () => {},
 		delays: [1, 1]
 	});
-	assert.deepEqual(failed, { kind: 'failed', message: STATUS_FAILING });
+	assert.equal(failed.kind === 'failed' && failed.message, STATUS_FAILING);
 	assert.equal(refused.calls.length, 1);
 });
 

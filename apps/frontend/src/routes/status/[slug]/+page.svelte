@@ -43,8 +43,9 @@
 			} else if (result.kind === 'missing') {
 				page = null;
 				error = STATUS_MISSING;
-			} else if (!page) {
-				error = result.message;
+			} else {
+				console.warn('status page load failed', url, result.cause);
+				if (!page) error = result.message;
 			}
 		} finally {
 			inFlight = false;
