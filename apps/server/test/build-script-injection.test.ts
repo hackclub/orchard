@@ -1,3 +1,8 @@
+import {
+  registerOwnedClasses,
+  setGraftRecords,
+  type GraftRecord
+} from '../src/grafts/graft-registry';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -144,11 +149,19 @@ test('hostile refs and paths are refused at the build boundary', () => {
 
 test('the graft door refuses to store a hostile branch', async () => {
   const updates: unknown[] = [];
-  const door = Object.create(ProjectsDoorV1.prototype) as ProjectsDoorV1;
-  Object.assign(door, {
-    graft: { id: 'g', manifest: { capabilities: ['projects.read', 'projects.write'] } },
-    prisma: { deployment: { update: async (args: unknown) => updates.push(args) } }
-  });
+  class Parent {}
+  setGraftRecords([
+    {
+      id: 'g',
+      dir: '/tmp/g',
+      status: 'loaded',
+      warnings: [],
+      manifest: { capabilities: ['projects.read', 'projects.write'] }
+    } as unknown as GraftRecord
+  ]);
+  registerOwnedClasses('g', [Parent]);
+  const prisma = { deployment: { update: async (args: unknown) => updates.push(args) } };
+  const door = new ProjectsDoorV1(new Parent(), {} as never, prisma as never);
   for (const branch of HOSTILE) {
     await assert.rejects(() => door.setDeploymentBranch('dep', branch), /Invalid branch name/);
   }

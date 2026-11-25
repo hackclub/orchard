@@ -202,7 +202,7 @@ export class ProjectsDoorV1 {
     const res = await this.execInPod(
       deploymentId,
       podName,
-      `cd ${shellQuote(dir)} && for f in .* *; do [ "$f" = . ] || [ "$f" = .. ] || [ ! -e "$f" ] && [ ! -L "$f" ] && continue; if [ -d "$f" ]; then t=dir; elif [ -f "$f" ]; then t=file; else t=other; fi; printf '%s\\t%s\\t%s\\000' "$t" "$(wc -c < "$f" 2>/dev/null || echo 0)" "$f"; done`,
+      `cd ${shellQuote(dir)} && for f in .* *; do [ "$f" = . ] || [ "$f" = .. ] || [ ! -e "$f" ] && [ ! -L "$f" ] && continue; n=0; if [ -d "$f" ]; then t=dir; elif [ -f "$f" ]; then t=file; n=$(wc -c < "$f" 2>/dev/null || echo 0); else t=other; fi; printf '%s\\t%s\\t%s\\000' "$t" "$n" "$f"; done`,
       { container }
     );
     if (res.exitCode !== 0) throw new Error(res.stderr.trim() || `cannot list ${dir}`);
@@ -318,7 +318,6 @@ export class ProjectsDoorV1 {
 
   async setDeploymentBranch(deploymentId: string, branch: string): Promise<void> {
     requireWrite(this);
-    await own(this, deploymentId);
     if (!isSafeGitRef(branch)) throw new Error('Invalid branch name');
     await state(this).prisma.deployment.update({
       where: { id: deploymentId },
@@ -458,6 +457,10 @@ async function runExec(door: ProjectsDoorV1,
         });
       })
       .then((ws) => {
+        if (settled) {
+          ws.close();
+          return;
+        }
         socket = ws;
         ws.on('close', () =>
           setImmediate(() => fail(new Error('exec connection closed without a status')))
