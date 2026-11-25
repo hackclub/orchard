@@ -234,25 +234,26 @@ test('a noisy app cannot push a quiet app out of its own outage history', async 
   const quiet = 'd0000000-0000-0000-0000-000000000002';
   const now = Date.now();
   const rows: { deploymentId: string; podName: string; toStatus: string; at: Date }[] = [];
-  for (let i = 0; i < 6000; i++) {
+  for (let i = 0; i < 12000; i++) {
+    const base = i < 6000 ? now - 20 * 24 * 3_600_000 : now - 60 * 60_000;
     rows.push({
       deploymentId: noisy,
       podName: 'web-1',
       toStatus: i % 2 ? 'ready' : 'crashing',
-      at: new Date(now - 60 * 60_000 + i * 500)
+      at: new Date(base + (i % 6000) * 500)
     });
   }
   rows.push({
     deploymentId: quiet,
     podName: 'api-1',
     toStatus: 'crashing',
-    at: new Date(now - 3 * 3_600_000)
+    at: new Date(now - 10 * 24 * 3_600_000)
   });
   rows.push({
     deploymentId: quiet,
     podName: 'api-1',
     toStatus: 'ready',
-    at: new Date(now - 2 * 3_600_000)
+    at: new Date(now - 10 * 24 * 3_600_000 + 3_600_000)
   });
   const none = async () => [];
   const prisma = {
@@ -306,5 +307,5 @@ test('a noisy app cannot push a quiet app out of its own outage history', async 
   const page = await service.render('acme');
   const quietIncidents = page!.incidents.filter((i) => i.componentId === `deployment:${quiet}`);
   assert.equal(quietIncidents.length, 1);
-  assert.equal(Date.parse(quietIncidents[0].startedAt), now - 3 * 3_600_000);
+  assert.equal(Date.parse(quietIncidents[0].startedAt), now - 10 * 24 * 3_600_000);
 });
