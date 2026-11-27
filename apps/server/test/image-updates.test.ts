@@ -84,7 +84,9 @@ test('the tag digest comes from a HEAD, after the docker hub token dance', async
   const { digest, failures } = await resolve('n8nio/n8n:1', net);
   assert.equal(digest, NEW);
   assert.deepEqual(failures, []);
-  assert.ok(calls.every((call) => call.method === 'HEAD' || call.url.includes('auth.docker.io')));
+  assert.ok(
+    calls.every((call) => call.method === 'HEAD' || new URL(call.url).hostname === 'auth.docker.io')
+  );
 });
 
 test('a registry that refuses HEAD falls back to hashing the manifest body', async () => {
