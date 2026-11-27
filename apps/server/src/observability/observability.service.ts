@@ -1127,12 +1127,20 @@ function buildEntry(header: RawLine, lines: RawLine[]): LogEntry {
           for (const [k, v] of Object.entries(tenantMetadata)) {
             if (!RESERVED_METADATA_KEYS.has(k)) metadata[k] = v;
           }
+          // The line shown, searched and exported keeps the other fields, so an
+          // error's details aren't reduced to its message. pid/hostname ride on
+          // every pino line and say nothing.
+          const { pid: _p, hostname: _h, ...fields } = metadata;
+          const text =
+            Object.keys(fields).length > 0
+              ? `${String(message)} ${JSON.stringify(fields)}`
+              : String(message);
           return {
             timestamp: timestamp != null ? String(timestamp) : undefined,
             level: level != null ? normalizeLevel(String(level)) : undefined,
             message: String(message),
-            lines: [String(message)],
-            raw: String(message),
+            lines: [text],
+            raw: text,
             metadata: Object.keys(metadata).length > 0 ? metadata : undefined
           };
         }
@@ -1165,7 +1173,18 @@ function detectLevel(header: string, lines: string[]): string | undefined {
   return undefined;
 }
 
+// pino writes its levels as numbers.
+const NUMERIC_LEVELS: Record<string, string> = {
+  '10': 'TRACE',
+  '20': 'DEBUG',
+  '30': 'INFO',
+  '40': 'WARN',
+  '50': 'ERROR',
+  '60': 'FATAL'
+};
+
 function normalizeLevel(s: string): string {
+  if (NUMERIC_LEVELS[s]) return NUMERIC_LEVELS[s];
   const upper = s.toUpperCase();
   if (upper === 'WARNING') return 'WARN';
   return upper;
