@@ -31,6 +31,8 @@ export const routes: GeneratedRoute[] = [
   { method: 'PATCH', path: '/admin/instance-settings/custom-domain-verification', auth: 'superadmin' },
   { method: 'GET', path: '/admin/instance-settings/databases', auth: 'superadmin' },
   { method: 'PATCH', path: '/admin/instance-settings/databases', auth: 'superadmin' },
+  { method: 'GET', path: '/admin/instance-settings/fast-builder', auth: 'superadmin' },
+  { method: 'PATCH', path: '/admin/instance-settings/fast-builder', auth: 'superadmin' },
   { method: 'GET', path: '/admin/instance-settings/image-scanning', auth: 'superadmin' },
   { method: 'PATCH', path: '/admin/instance-settings/image-scanning', auth: 'superadmin' },
   { method: 'GET', path: '/admin/instance-settings/mcp', auth: 'superadmin' },

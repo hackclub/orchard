@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AnalyticsService } from '../../analytics/analytics.service';
 import { FirecrackerClient } from './fc-client';
+import {
+  InstanceSettingsService,
+  type FastBuilderRouting
+} from '../../instance-settings/instance-settings.service';
 
 export type BuilderKind = 'kubernetes' | 'depot' | 'firecracker';
 
@@ -24,11 +28,16 @@ export function decideBuilder(input: {
   buildWithDepot: boolean;
   override: string | null;
   firecrackerAvailable: boolean;
+  routing?: FastBuilderRouting;
   flag: () => Promise<boolean>;
 }): Promise<BuilderKind> | BuilderKind {
+  const routing = input.routing ?? 'flag';
   if (input.buildWithDepot) return 'depot';
   if (!input.firecrackerAvailable || input.override === 'kubernetes') return 'kubernetes';
+  if (routing === 'off') return 'kubernetes';
   if (input.override === 'firecracker') return 'firecracker';
+  if (routing === 'all') return 'firecracker';
+  if (routing === 'per_app') return 'kubernetes';
   return input.flag().then(
     (on) => (on ? 'firecracker' : 'kubernetes'),
     () => 'kubernetes'
@@ -44,14 +53,17 @@ export function builderPoolOf(
 }
 
 const FLAG_TIMEOUT_MS = 2_000;
+const ROUTING_TTL_MS = 5_000;
 
 @Injectable()
 export class BuildBackendRouter {
   private readonly logger = new Logger(BuildBackendRouter.name);
+  private routingCache: { value: FastBuilderRouting; at: number } | null = null;
 
   constructor(
     private readonly analytics: AnalyticsService,
-    private readonly firecracker: FirecrackerClient
+    private readonly firecracker: FirecrackerClient,
+    private readonly settings: InstanceSettingsService
   ) {}
 
   async pick(deployment: {
@@ -62,12 +74,28 @@ export class BuildBackendRouter {
     organizationId: string;
     organizationSlug?: string | null;
   }): Promise<BuilderKind> {
+    const firecrackerAvailable = this.firecracker.enabled;
     return decideBuilder({
       buildWithDepot: deployment.buildWithDepot,
       override: deployment.builderOverride,
-      firecrackerAvailable: this.firecracker.enabled,
+      firecrackerAvailable,
+      routing:
+        deployment.buildWithDepot || !firecrackerAvailable ? undefined : await this.routing(),
       flag: () => this.flag(deployment)
     });
+  }
+
+  private async routing(): Promise<FastBuilderRouting> {
+    const cached = this.routingCache;
+    if (cached && Date.now() - cached.at < ROUTING_TTL_MS) return cached.value;
+    try {
+      const { value } = await this.settings.getFastBuilderRoutingState();
+      this.routingCache = { value, at: Date.now() };
+      return value;
+    } catch (error) {
+      this.logger.warn(`fast builder routing read failed: ${(error as Error).message}`);
+      return cached?.value ?? 'flag';
+    }
   }
 
   private async flag(deployment: {

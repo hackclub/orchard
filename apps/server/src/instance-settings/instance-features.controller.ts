@@ -28,7 +28,8 @@ export class InstanceFeaturesController {
       email: this.emailService.isConfigured(),
       superBuilds: Boolean(process.env.DEPOT_TOKEN),
       storage: storageFeatures(),
-      resourceLimits: (await this.settings.getResourceLimitsState()).value
+      resourceLimits: (await this.settings.getResourceLimitsState()).value,
+      fastBuilderRouting: (await this.settings.getFastBuilderRoutingState()).value
     };
   }
 }

@@ -53,6 +53,24 @@ export function parseResourceLimits(raw: string | null | undefined): ResourceLim
     : null;
 }
 
+export const FAST_BUILDER_ROUTING_KEY = 'fast_builder_routing';
+export const FAST_BUILDER_ROUTING_ENV = 'FAST_BUILDER_ROUTING_DEFAULT';
+export const FAST_BUILDER_ROUTINGS = ['all', 'per_app', 'off', 'flag'] as const;
+export type FastBuilderRouting = (typeof FAST_BUILDER_ROUTINGS)[number];
+
+export function parseFastBuilderRouting(raw: string | null | undefined): FastBuilderRouting | null {
+  const v = (raw ?? '').trim().toLowerCase().replace(/-/g, '_');
+  return (FAST_BUILDER_ROUTINGS as readonly string[]).includes(v)
+    ? (v as FastBuilderRouting)
+    : null;
+}
+
+export interface FastBuilderRoutingState {
+  value: FastBuilderRouting;
+  dbValue: FastBuilderRouting | null;
+  fallback: FastBuilderRouting;
+}
+
 export interface ChoiceState<T extends string> {
   value: T;
   dbValue: T | null;
@@ -371,6 +389,16 @@ export class InstanceSettingsService implements OnModuleInit {
       );
     }
     await this.set(RESOURCE_LIMITS_KEY, value);
+  }
+
+  async getFastBuilderRoutingState(): Promise<FastBuilderRoutingState> {
+    const dbValue = parseFastBuilderRouting(await this.getRaw(FAST_BUILDER_ROUTING_KEY));
+    const fallback = parseFastBuilderRouting(process.env[FAST_BUILDER_ROUTING_ENV]) ?? 'flag';
+    return { value: dbValue ?? fallback, dbValue, fallback };
+  }
+
+  async setFastBuilderRouting(value: FastBuilderRouting): Promise<void> {
+    await this.set(FAST_BUILDER_ROUTING_KEY, value);
   }
 
   async getImageScannerState(

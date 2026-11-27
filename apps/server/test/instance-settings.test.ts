@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { hasBackupRoute, platformBackupTarget } from '../src/instance-config/object-storage';
 import {
+  FAST_BUILDER_ROUTING_KEY,
   IMAGE_SCANNER_KEY,
   InstanceSettingsService,
   NO_BACKUP_STORAGE,
@@ -142,6 +143,39 @@ test('an unset image scanner follows the computed default, a saved or pinned one
     });
     assert.equal(state.value, 'harbor');
     assert.equal(asked, false);
+  });
+});
+
+test('fast builder routing is stored, else the env default, else the flag', async () => {
+  await withEnv({ FAST_BUILDER_ROUTING_DEFAULT: undefined }, async () => {
+    const { prisma, settings } = build();
+    assert.deepEqual(await settings.getFastBuilderRoutingState(), {
+      value: 'flag',
+      dbValue: null,
+      fallback: 'flag'
+    });
+    await settings.setFastBuilderRouting('off');
+    assert.equal(prisma.rows.get(FAST_BUILDER_ROUTING_KEY), 'off');
+    assert.equal((await settings.getFastBuilderRoutingState()).value, 'off');
+  });
+  await withEnv({ FAST_BUILDER_ROUTING_DEFAULT: 'all' }, async () => {
+    const { prisma, settings } = build();
+    assert.deepEqual(await settings.getFastBuilderRoutingState(), {
+      value: 'all',
+      dbValue: null,
+      fallback: 'all'
+    });
+    await settings.setFastBuilderRouting('per_app');
+    assert.equal(prisma.rows.get(FAST_BUILDER_ROUTING_KEY), 'per_app');
+    assert.deepEqual(await settings.getFastBuilderRoutingState(), {
+      value: 'per_app',
+      dbValue: 'per_app',
+      fallback: 'all'
+    });
+  });
+  await withEnv({ FAST_BUILDER_ROUTING_DEFAULT: 'nonsense' }, async () => {
+    const { settings } = build();
+    assert.equal((await settings.getFastBuilderRoutingState()).value, 'flag');
   });
 });
 

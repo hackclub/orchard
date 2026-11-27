@@ -1107,6 +1107,79 @@
         ]
       }
     },
+    "/admin/instance-settings/fast-builder": {
+      "get": {
+        "description": "Auth: superadmin",
+        "operationId": "admin_instance_settings_fast_builder_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {},
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "GET /admin/instance-settings/fast-builder",
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "description": "Auth: superadmin",
+        "operationId": "admin_instance_settings_fast_builder_update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {},
+                "properties": {},
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {},
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "PATCH /admin/instance-settings/fast-builder",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/instance-settings/image-scanning": {
       "get": {
         "description": "Auth: superadmin",

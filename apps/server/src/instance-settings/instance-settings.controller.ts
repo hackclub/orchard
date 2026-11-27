@@ -1,15 +1,22 @@
-import { BadRequestException, Body, Controller, Get, Patch } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Inject, Patch } from '@nestjs/common';
 import {
   DATABASE_TOGGLES,
+  FAST_BUILDER_ROUTINGS,
   InstanceSettingsService,
+  parseFastBuilderRouting,
   type DatabaseToggle
 } from './instance-settings.service';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { FirecrackerClient } from '../docker/fc/fc-client';
 
 // Superadmin-only (default-deny: no @Auth()/@SuperAdmin() decorator, so the
 // global SuperAdminGuard requires a superadmin).
 @Controller('admin/instance-settings')
 export class InstanceSettingsController {
-  constructor(private readonly settings: InstanceSettingsService) {}
+  constructor(
+    private readonly settings: InstanceSettingsService,
+    @Inject(AnalyticsService) private readonly analytics: AnalyticsService
+  ) {}
 
   @Get('userspace-scheduling')
   async getUserspaceScheduling() {
@@ -66,5 +73,27 @@ export class InstanceSettingsController {
     if (!(toggle in DATABASE_TOGGLES)) throw new BadRequestException('Unknown database setting');
     await this.settings.setDatabaseToggle(toggle, Boolean(body?.enabled));
     return this.settings.databaseTogglesView();
+  }
+
+  private async fastBuilderView() {
+    return {
+      ...(await this.settings.getFastBuilderRoutingState()),
+      available: new FirecrackerClient().enabled,
+      flagConfigured: this.analytics.configured
+    };
+  }
+
+  @Get('fast-builder')
+  async getFastBuilder() {
+    return this.fastBuilderView();
+  }
+
+  @Patch('fast-builder')
+  async setFastBuilder(@Body() body: { value?: unknown }) {
+    const value = parseFastBuilderRouting(typeof body?.value === 'string' ? body.value : null);
+    if (!value)
+      throw new BadRequestException(`value must be one of ${FAST_BUILDER_ROUTINGS.join(', ')}`);
+    await this.settings.setFastBuilderRouting(value);
+    return this.fastBuilderView();
   }
 }

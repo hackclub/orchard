@@ -919,6 +919,15 @@
     "bodyIds": [],
     "unseeded": []
   },
+  "GET /admin/instance-settings/fast-builder": {
+    "class": "superadmin",
+    "auth": "superadmin",
+    "handler": "InstanceSettingsController.getFastBuilder",
+    "params": [],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
   "GET /admin/instance-settings/image-scanning": {
     "class": "superadmin",
     "auth": "superadmin",
@@ -3851,6 +3860,15 @@
     "class": "superadmin",
     "auth": "superadmin",
     "handler": "InstanceSettingsController.setDatabaseToggle",
+    "params": [],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "PATCH /admin/instance-settings/fast-builder": {
+    "class": "superadmin",
+    "auth": "superadmin",
+    "handler": "InstanceSettingsController.setFastBuilder",
     "params": [],
     "queryIds": [],
     "bodyIds": [],
