@@ -3,6 +3,7 @@
 	import SettingsList from '$lib/components/ui/SettingsList.svelte';
 	import { ResourceNotifications, AlertRules } from '$lib/components/notifications';
 	import { earlyAccessFlag } from '$lib/stores';
+	import AccessCard from './AccessCard.svelte';
 	import AutoDeployCard from './AutoDeployCard.svelte';
 	import BuilderOptions from './BuilderOptions.svelte';
 	import BuildTab from './BuildTab.svelte';
@@ -197,7 +198,10 @@
 		},
 		{
 			label: 'Admin',
-			items: [{ id: 'danger', label: 'Danger zone', href: hrefFor('danger') }]
+			items: [
+				{ id: 'access', label: 'Sharing', href: hrefFor('access') },
+				{ id: 'danger', label: 'Danger zone', href: hrefFor('danger') }
+			]
 		}
 	]);
 </script>
@@ -306,6 +310,10 @@
 			{#if deployment?.id && organizationId}
 				<AlertRules {organizationId} scopeType="deployment" scopeId={deployment.id} />
 				<ResourceNotifications {organizationId} scopeType="deployment" scopeId={deployment.id} />
+			{/if}
+		{:else if activeSection === 'access'}
+			{#if deployment?.id}
+				<AccessCard deploymentId={deployment.id} />
 			{/if}
 		{:else if activeSection === 'danger'}
 			<SectionCard title="Danger zone" tone="danger">

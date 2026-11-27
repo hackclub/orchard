@@ -246,6 +246,10 @@ var routeCoverage = map[string]string{
 	"DELETE /pods/:podName":    "pod delete",
 	"POST /pods/:podName/exec": "pod exec",
 
+	"GET /deployments/:id/access":            "deploy access list",
+	"POST /deployments/:id/access":           "deploy access grant",
+	"DELETE /deployments/:id/access/:userId": "deploy access revoke",
+
 	// sandboxes
 	"GET /instance/features":                             "sandbox / ssh-identity (Greenhouse install check)",
 	"GET /sandboxes":                                     "sandbox list",

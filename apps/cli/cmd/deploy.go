@@ -58,6 +58,7 @@ func deployCmd() *cobra.Command {
 		deployKilledCmd(),
 		deployAutoDeployCmd(),
 		deployWebhookTokenCmd(),
+		deployAccessCmd(),
 		deployGithubDeploymentsCmd(),
 		deployIconCmd(),
 	)

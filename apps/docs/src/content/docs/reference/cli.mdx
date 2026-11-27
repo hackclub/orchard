@@ -15,7 +15,7 @@ brew install --cask leafdtk/tap/orchard-cli
 ```
 
 Every command accepts `-o json` for machine-readable output, and `--org` / `--env` to
-override the saved context. **428 commands** are available.
+override the saved context. **432 commands** are available.
 
 ## alert
 
@@ -1369,6 +1369,44 @@ orchard deploy
 ```
 
 Aliases: `deployment`, `deployments`
+
+### `orchard deploy access`
+
+Share one deployment with an organization member, without the rest of the project
+
+```bash
+orchard deploy access
+```
+
+### `orchard deploy access grant`
+
+Give an organization member a role on this deployment only
+
+```bash
+orchard deploy access grant <id> <email>
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--role` | string | `member` | viewer (read only) or member (edit env, restart, logs, shell) |
+
+### `orchard deploy access list`
+
+List who has been given access to a deployment
+
+```bash
+orchard deploy access list <id>
+```
+
+Aliases: `ls`
+
+### `orchard deploy access revoke`
+
+Remove a member's access to this deployment
+
+```bash
+orchard deploy access revoke <id> <email>
+```
 
 ### `orchard deploy auto-deploy`
 

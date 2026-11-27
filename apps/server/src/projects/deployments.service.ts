@@ -317,7 +317,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       select: { projectId: true }
     });
     if (!deployment) throw new NotFoundException(`Deployment ${deploymentId} not found`);
-    await this.authz.requireProjectEdit(deployment.projectId, user.id, 'retry apply');
+    await this.authz.requireProjectEdit(
+      deployment.projectId,
+      user.id,
+      'retry apply',
+      deploymentId
+    );
     const retried = await this.applyQueue.retryForDeployment(deploymentId);
     return { success: true, retried };
   }
@@ -1365,10 +1370,17 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
 
   async listDeploymentsSummary(userId: string, orgId?: string) {
     const projectFilter = await this.access.buildProjectAccessFilter(userId, orgId);
-    if (!projectFilter) return [];
+    const grantedIds = [...(await this.access.grantedDeployments(userId)).keys()];
+    const visibility = [
+      ...(projectFilter ? [{ project: projectFilter }] : []),
+      ...(grantedIds.length > 0
+        ? [{ id: { in: grantedIds }, ...(orgId ? { project: { organizationId: orgId } } : {}) }]
+        : [])
+    ];
+    if (visibility.length === 0) return [];
 
     const deployments = await this.prisma.deployment.findMany({
-      where: { project: projectFilter },
+      where: { OR: visibility },
       select: {
         id: true,
         name: true,
@@ -1565,7 +1577,18 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
   async getProjectDeployments(projectId: string, clerkId: string, userData?: any) {
     const user = await this.usersService.findOrCreateByClerkId(clerkId, userData);
     if (!user) throw new NotFoundException('User not found');
-    const access = await this.authz.requireProjectView(projectId, user.id);
+    let access: Awaited<ReturnType<AuthorizationService['requireProjectView']>> | null = null;
+    let granted: Map<string, string> | null = null;
+    try {
+      access = await this.authz.requireProjectView(projectId, user.id);
+    } catch (error) {
+      if (!(error instanceof NotFoundException)) throw error;
+      granted = await this.access.grantedDeployments(clerkId);
+      const inProject = await this.prisma.deployment.count({
+        where: { projectId, id: { in: [...granted.keys()] } }
+      });
+      if (inProject === 0) throw error;
+    }
 
     const project = await this.prisma.project.findUnique({
       where: { id: projectId }
@@ -1576,7 +1599,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     }
 
     const deployments = await this.prisma.deployment.findMany({
-      where: { projectId },
+      where: { projectId, ...(granted ? { id: { in: [...granted.keys()] } } : {}) },
       include: {
         services: {
           include: {
@@ -1618,7 +1641,8 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
           status: computedStatus,
           warnings
         });
-        return access.canEdit ? merged : this.scrubDeploymentForViewer(merged as any);
+        const canEdit = access ? access.canEdit : granted?.get(deployment.id) === 'member';
+        return canEdit ? merged : this.scrubDeploymentForViewer(merged as any);
       })
     );
 
@@ -1700,7 +1724,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
 
     const limitsRestartPending = await this.limitsRestartPending(deployment);
     const [, pods, workload, projectIngresses, rollout, latestVerdict] = await Promise.all([
-      userId ? this.authz.requireProjectView(deployment.projectId, userId) : null,
+      userId ? this.authz.requireProjectView(deployment.projectId, userId, deployment.id) : null,
       this.fetchMirroredPods([deploymentId]),
       this.prisma.k8sWorkload.findUnique({ where: { deploymentId } }),
       namespace && deployment.projectId
@@ -1860,7 +1884,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
 
     // Defense-in-depth: re-assert project-view even though the controller already did.
     if (userId) {
-      await this.authz.requireProjectView(deployment.projectId, userId);
+      await this.authz.requireProjectView(deployment.projectId, userId, deployment.id);
     }
 
     return this.fetchMirroredPods([deploymentId]);
@@ -1876,7 +1900,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (userId) {
-      await this.authz.requireProjectView(deployment.projectId, userId);
+      await this.authz.requireProjectView(deployment.projectId, userId, deployment.id);
     }
 
     let pods: any[] = [];
@@ -1960,7 +1984,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'cancel deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'cancel deployments',
+      deployment.id
+    );
 
     if (deployment.buildStatus !== 'building') {
       throw new BadRequestException("This app can't build right now");
@@ -2337,7 +2366,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     }
     if (!options?.fromComposeStack) this.assertNotComposeManaged(deployment, 'Scale');
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'scale deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'scale deployments',
+      deployment.id
+    );
 
     if (replicas < 0 || !Number.isInteger(replicas)) {
       throw new BadRequestException('Replicas must be a non-negative integer');
@@ -2491,7 +2525,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     });
     if (!deployment) throw new NotFoundException(`Deployment ${deploymentId} not found`);
     this.assertNotComposeManaged(deployment, 'Stop');
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'stop deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'stop deployments',
+      deployment.id
+    );
 
     if (this.applyPipelineEnabled()) {
       await this.prisma.deployment.update({
@@ -2555,7 +2594,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     });
     if (!deployment) throw new NotFoundException(`Deployment ${deploymentId} not found`);
     this.assertNotComposeManaged(deployment, 'Start');
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'start deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'start deployments',
+      deployment.id
+    );
 
     const replicas = Math.max(1, deployment.replicas);
     const pending = (deployment.pendingPush as unknown as PendingPush | null) ?? null;
@@ -2688,7 +2732,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'restart deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'restart deployments',
+      deployment.id
+    );
 
     if (deployment.stopped) {
       throw new BadRequestException('Start the app before restarting it');
@@ -2761,7 +2810,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'update deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'update deployments',
+      deployment.id
+    );
 
     const before = new Map((await this.readOwnEnvVars(deployment.id)).map((v) => [v.key, v]));
     const envEntries = applyEnvKeepRules(Array.isArray(env) ? env : [], before);
@@ -2961,7 +3015,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'update deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'update deployments',
+      deployment.id
+    );
 
     const { buildWithDepot, persistentBuildCache, buildFromRoot } = body;
 
@@ -3163,7 +3222,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'rename deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'rename deployments',
+      deployment.id
+    );
 
     const trimmed = String(name || '').trim();
     if (!trimmed) throw new BadRequestException('Name is required');
@@ -3247,7 +3311,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'update deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'update deployments',
+      deployment.id
+    );
 
     if (!deployment.githubRepo) {
       throw new BadRequestException("This app wasn't created from GitHub");
@@ -3502,7 +3571,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     }
     this.assertNotComposeManaged(deployment, 'Update health checks');
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'update deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'update deployments',
+      deployment.id
+    );
 
     await this.prisma.deployment.update({
       where: { id: deploymentId },
@@ -3776,7 +3850,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     }
     if (!options?.fromComposeStack) this.assertNotComposeManaged(deployment, 'Update volumes');
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'update deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'update deployments',
+      deployment.id
+    );
 
     if (Array.isArray(volumes) && volumes.some((v) => v && v.type === 'hostPath')) {
       void this.audit.log({
@@ -4064,7 +4143,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'manage services');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'manage services',
+      deployment.id
+    );
 
     const rawName = String(data.name || '').trim();
     if (!rawName) {
@@ -4242,7 +4326,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Port ${serviceId} not found`);
     }
 
-    await this.authz.requireProjectEdit(service.deployment.project.id, user.id, 'update services');
+    await this.authz.requireProjectEdit(
+      service.deployment.project.id,
+      user.id,
+      'update services',
+      service.deployment.id
+    );
 
     const domainProvided = Object.hasOwn(changes ?? {}, 'domain');
     let normalizedDomain: string | null = null;
@@ -4556,7 +4645,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Port ${serviceId} not found`);
     }
 
-    await this.authz.requireProjectEdit(service.deployment.project.id, user.id, 'update services');
+    await this.authz.requireProjectEdit(
+      service.deployment.project.id,
+      user.id,
+      'update services',
+      service.deployment.id
+    );
 
     if (service.ingresses.length > 0) {
       throw new BadRequestException('Remove its domains before you remove this port');
@@ -4699,7 +4793,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Port ${serviceId} not found`);
     }
 
-    await this.authz.requireProjectEdit(service.deployment.project.id, user.id, 'update services');
+    await this.authz.requireProjectEdit(
+      service.deployment.project.id,
+      user.id,
+      'update services',
+      service.deployment.id
+    );
 
     if (exposePublic && service.type !== 'external') {
       await assertOrgCanExposeNodePort(this.prisma, service.deployment.project.organizationId);
@@ -4866,7 +4965,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'configure auto-deploy');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'configure auto-deploy',
+      deployment.id
+    );
 
     if (!deployment.githubRepo) {
       throw new BadRequestException("This app wasn't created from GitHub");
@@ -5023,7 +5127,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'configure auto-deploy');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'configure auto-deploy',
+      deployment.id
+    );
 
     const previousBranch = deployment.autoDeployBranch;
     const previouslyEnabled = deployment.autoDeployEnabled;
@@ -6256,7 +6365,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
 
     // Defense-in-depth: re-assert project-edit even though the controller already did.
     if (userId) {
-      await this.authz.requireProjectEdit(deployment.projectId, userId, 'change deploy strategy');
+      await this.authz.requireProjectEdit(
+        deployment.projectId,
+        userId,
+        'change deploy strategy',
+        deployment.id
+      );
     }
 
     // PVC volumes pin the strategy to Recreate: ReadWriteOnce can't satisfy
@@ -6314,7 +6428,8 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       await this.authz.requireProjectEdit(
         deployment.projectId,
         userId,
-        'change the disruption budget'
+        'change the disruption budget',
+        deployment.id
       );
     }
 
@@ -6374,7 +6489,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     if (!deployment) throw new NotFoundException('Deployment not found');
 
     if (userId) {
-      await this.authz.requireProjectView(deployment.projectId, userId);
+      await this.authz.requireProjectView(deployment.projectId, userId, deployment.id);
     }
 
     // A rule or a personal setting at any level above this deployment counts:
@@ -6446,7 +6561,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
 
     // Defense-in-depth: re-assert project-edit even though the controller already did.
     if (userId) {
-      await this.authz.requireProjectEdit(deployment.projectId, userId, 'change image pull policy');
+      await this.authz.requireProjectEdit(
+        deployment.projectId,
+        userId,
+        'change image pull policy',
+        deployment.id
+      );
     }
 
     // Unlike :id/image this is allowed on GitHub-built deployments: it changes
@@ -6494,7 +6614,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
 
     // Defense-in-depth: re-assert project-edit even though the controller already did.
     if (userId) {
-      await this.authz.requireProjectEdit(deployment.projectId, userId, 'change deployment image');
+      await this.authz.requireProjectEdit(
+        deployment.projectId,
+        userId,
+        'change deployment image',
+        deployment.id
+      );
     }
     await assertImageOwnedByProject(
       this.prisma,
@@ -6579,7 +6704,8 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       await this.authz.requireProjectEdit(
         deployment.projectId,
         userId,
-        'update deployment resources'
+        'update deployment resources',
+        deployment.id
       );
     }
 
@@ -7097,7 +7223,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       select: { id: true, projectId: true }
     });
     if (!deployment) throw new NotFoundException('App not found');
-    await this.authz.requireProjectEdit(deployment.projectId, user.id, 'update app picture');
+    await this.authz.requireProjectEdit(
+      deployment.projectId,
+      user.id,
+      'update app picture',
+      deployment.id
+    );
     const icon = await storageService.uploadImage(file, `app-icons/${deploymentId}`);
     return this.prisma.deployment.update({ where: { id: deploymentId }, data: { icon } });
   }
@@ -7896,7 +8027,8 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     await this.authz.requireProjectEdit(
       deployment.projectId,
       user.id,
-      'deploy from a local build context'
+      'deploy from a local build context',
+      deployment.id
     );
 
     if (deployment.githubRepo) {
@@ -9334,7 +9466,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'rebuild deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'rebuild deployments',
+      deployment.id
+    );
 
     if (!deployment.githubRepo || !deployment.githubBranch) {
       throw new BadRequestException("This app wasn't created from GitHub");
@@ -9593,7 +9730,12 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);
     }
 
-    await this.authz.requireProjectEdit(deployment.project.id, user.id, 'rollback deployments');
+    await this.authz.requireProjectEdit(
+      deployment.project.id,
+      user.id,
+      'rollback deployments',
+      deployment.id
+    );
 
     const imageHistory = await this.prisma.imageHistory.findUnique({
       where: { id: imageHistoryId }

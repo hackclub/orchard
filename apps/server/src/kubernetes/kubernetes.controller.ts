@@ -124,20 +124,30 @@ export class KubernetesController {
     namespace: string | undefined,
     req: any,
     mode: 'view' | 'edit',
-    action = 'access this namespace'
+    action = 'access this namespace',
+    podName?: string
   ) {
     if (!namespace) throw new BadRequestException('namespace query parameter is required');
     const scope = await resolveNamespaceScope(this.prisma, namespace);
+    const deploymentId =
+      scope && podName
+        ? ((
+            await this.prisma.pod.findFirst({
+              where: { name: podName, deployment: { namespace, projectId: scope.projectId } },
+              select: { deploymentId: true }
+            })
+          )?.deploymentId ?? undefined)
+        : undefined;
     const userId = await this.resolveUserId(req);
     const projectId = scope?.projectId ?? NIL_PROJECT_ID;
     const organizationId = scope?.organizationId ?? null;
     try {
       if (mode === 'edit') {
-        await this.authz.requireProjectEdit(projectId, userId, action);
+        await this.authz.requireProjectEdit(projectId, userId, action, deploymentId);
         if (!scope) throw new NotFoundException(NAMESPACE_NOT_FOUND);
         return { projectId, organizationId, userId, canEdit: true };
       }
-      const access = await this.authz.requireProjectView(projectId, userId);
+      const access = await this.authz.requireProjectView(projectId, userId, deploymentId);
       if (!scope) throw new NotFoundException(NAMESPACE_NOT_FOUND);
       return { projectId, organizationId, userId, canEdit: access.canEdit };
     } catch (error) {
@@ -228,7 +238,7 @@ export class KubernetesController {
     @Query('namespace') namespace?: string,
     @Query('live') live?: string
   ) {
-    const access = await this.resolveNamespace(namespace, req, 'view');
+    const access = await this.resolveNamespace(namespace, req, 'view', undefined, podName);
     const scrub = (pod: any) =>
       access.canEdit ? pod : KubernetesController.scrubPodForViewer(pod);
     if (live === '1' || live === 'true') {
@@ -263,7 +273,7 @@ export class KubernetesController {
     @Query('sinceSeconds') sinceSeconds?: string,
     @Query('sinceTime') sinceTime?: string
   ) {
-    await this.resolveNamespace(namespace, req, 'edit', 'stream pod logs');
+    await this.resolveNamespace(namespace, req, 'edit', 'stream pod logs', podName);
     if (sinceSeconds && sinceTime) {
       throw new BadRequestException('sinceSeconds and sinceTime are mutually exclusive');
     }
@@ -309,7 +319,7 @@ export class KubernetesController {
     const namespace = (bodyNamespace || queryString(namespaceQuery, 'namespace') || '').trim();
     if (!namespace) throw new BadRequestException('namespace is required');
     assertValidPodName(podName);
-    const scope = await this.resolveNamespace(namespace, req, 'edit', 'exec in pod');
+    const scope = await this.resolveNamespace(namespace, req, 'edit', 'exec in pod', podName);
     await assertPodExecable(
       async (ns, name) => (await this.k8sWorkload.getPod(name, ns)).metadata?.labels,
       namespace,
@@ -747,7 +757,7 @@ export class KubernetesController {
     const container = q.container;
     const ns = (q.namespace ?? '').trim();
     if (!ns) throw new BadRequestException('namespace query parameter is required');
-    const scope = await this.resolveNamespace(ns, req, 'edit', action);
+    const scope = await this.resolveNamespace(ns, req, 'edit', action, podName);
     let pod: Awaited<ReturnType<K8sWorkloadService['getPod']>> | undefined;
     await assertPodExecable(
       async (n, name) => {

@@ -746,6 +746,62 @@ export class ProjectsService {
     };
   }
 
+  private async grantedProjects(clerkId: string, projectId?: string, orgId?: string) {
+    const granted = await this.access.grantedDeployments(clerkId);
+    if (granted.size === 0) return [];
+    const projects = await this.prisma.project.findMany({
+      where: {
+        ...(projectId ? { id: projectId } : {}),
+        ...(orgId ? { organizationId: orgId } : {}),
+        deployments: { some: { id: { in: [...granted.keys()] } } }
+      },
+      select: {
+        id: true,
+        organizationId: true,
+        name: true,
+        slug: true,
+        description: true,
+        icon: true,
+        namespace: true,
+        createdAt: true,
+        updatedAt: true,
+        organization: { select: { id: true, name: true, slug: true } },
+        owner: { select: { username: true } },
+        deployments: {
+          where: { id: { in: [...granted.keys()] } },
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            icon: true,
+            namespace: true,
+            status: true,
+            ingresses: { select: { id: true, host: true } }
+          }
+        }
+      }
+    });
+    return projects.map((p) => ({
+      ...p,
+      members: [],
+      ingresses: [],
+      databases: [],
+      templateInstances: [],
+      _count: { deployments: p.deployments.length, databases: 0, ingresses: 0 },
+      canEdit: false,
+      currentUserRole: {
+        orgRole: null,
+        projectRole: null,
+        source: 'deploymentGrant',
+        canView: true,
+        canEdit: false,
+        canManageMembers: false,
+        canDelete: false,
+        canTransferOwnership: false
+      }
+    }));
+  }
+
   async getProject(
     projectId: string,
     clerkId: string,
@@ -768,7 +824,14 @@ export class ProjectsService {
     // into an existence oracle: a real project ID runs a multi-join query;
     // a random UUID returns after a single index miss. `requireProjectView`
     // throws the same 404 either way, so the timing matches the body.
-    await this.authz.requireProjectView(projectId, user.id);
+    try {
+      await this.authz.requireProjectView(projectId, user.id);
+    } catch (error) {
+      if (!(error instanceof NotFoundException)) throw error;
+      const [view] = await this.grantedProjects(clerkId, projectId);
+      if (!view) throw error;
+      return view;
+    }
 
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
@@ -2167,6 +2230,15 @@ export class ProjectsService {
   }
 
   async listProjects(userId: string, orgId?: string, opts: { members?: boolean } = {}) {
+    const [own, granted] = await Promise.all([
+      this.listOwnProjects(userId, orgId, opts),
+      this.grantedProjects(userId, undefined, orgId)
+    ]);
+    const seen = new Set<string>(own.map((p) => p.id));
+    return [...own, ...granted.filter((g) => !seen.has(g.id))] as any[];
+  }
+
+  private async listOwnProjects(userId: string, orgId?: string, opts: { members?: boolean } = {}) {
     const where = await this.access.buildProjectAccessFilter(userId, orgId);
     if (!where) return [];
 

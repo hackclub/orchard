@@ -149,6 +149,13 @@ export function attachTerminalWebSocket(server: http.Server, app: INestApplicati
       const scope = await resolveNamespaceScope(prisma, namespace);
       if (!scope) return { reject: 404, message: 'Not Found' };
       const project = { id: scope.projectId, organizationId: scope.organizationId };
+      const grantDeploymentId =
+        (
+          await prisma.pod.findFirst({
+            where: { name: podName, deployment: { namespace, projectId: scope.projectId } },
+            select: { deploymentId: true }
+          })
+        )?.deploymentId ?? undefined;
       const runWithAuthCtx = <T>(fn: () => Promise<T>): Promise<T> =>
         new Promise<T>((resolve, rejectPromise) => {
           requestAuthStorage.run(execRequestContext(auth), () => {
@@ -157,7 +164,7 @@ export function attachTerminalWebSocket(server: http.Server, app: INestApplicati
         });
       try {
         await runWithAuthCtx(() =>
-          authz.requireProjectEdit(project.id, principal, 'exec into pod')
+          authz.requireProjectEdit(project.id, principal, 'exec into pod', grantDeploymentId)
         );
       } catch {
         return { reject: 404, message: 'Not Found' };
@@ -202,7 +209,12 @@ export function attachTerminalWebSocket(server: http.Server, app: INestApplicati
                 const valid = await sessionsService.validateSession(auth.browserSessionId);
                 if (!valid) return false;
               }
-              await authz.requireProjectEdit(project.id, principal, 'exec into pod');
+              await authz.requireProjectEdit(
+                project.id,
+                principal,
+                'exec into pod',
+                grantDeploymentId
+              );
               return true;
             } catch {
               return false;

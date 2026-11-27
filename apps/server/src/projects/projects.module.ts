@@ -1,3 +1,5 @@
+import { DeploymentGrantsService } from './deployment-grants.service';
+import { DeploymentGrantsController } from './deployment-grants.controller';
 import { RegistryCredentialsModule } from '../projects/registry-credentials.module';
 import { Module, forwardRef } from '@nestjs/common';
 import { KubernetesModule } from '../kubernetes/kubernetes.module';
@@ -80,6 +82,7 @@ import { DatabaseAdminController } from './database-admin.controller';
     RightsizingService,
     ProjectsService,
     ProjectAccessService,
+    DeploymentGrantsService,
     EnvironmentsService,
     EnvironmentSharedVarsService,
     DatabasesService,
@@ -109,6 +112,7 @@ import { DatabaseAdminController } from './database-admin.controller';
   controllers: [
     ProjectsController,
     DeploymentsController,
+    DeploymentGrantsController,
     ResourceBindingsController,
     IngressesController,
     DatabasesController,
@@ -127,6 +131,7 @@ import { DatabaseAdminController } from './database-admin.controller';
     ResourceBindingsService,
     ProjectsService,
     ProjectAccessService,
+    DeploymentGrantsService,
     EnvironmentsService,
     EnvironmentSharedVarsService,
     DatabasesService,

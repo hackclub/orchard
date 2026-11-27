@@ -280,6 +280,15 @@
     "bodyIds": [],
     "unseeded": []
   },
+  "DELETE /deployments/:id/access/:userId": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "DeploymentGrantsController.revoke",
+    "params": ["id:deployment", "userId:user"],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
   "DELETE /deployments/:id/bindings/:bindingId": {
     "class": "resource-scoped",
     "auth": "authenticated",
@@ -1635,6 +1644,15 @@
     "class": "resource-scoped",
     "auth": "authenticated",
     "handler": "DeploymentsController.getDeployment",
+    "params": ["id:deployment"],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "GET /deployments/:id/access": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "DeploymentGrantsController.list",
     "params": ["id:deployment"],
     "queryIds": [],
     "bodyIds": [],
@@ -5060,6 +5078,15 @@
     "auth": "authenticated",
     "handler": "DeploymentsController.enableServicePortPublic",
     "params": ["deploymentId:deployment", "serviceId:service", "portId:servicePort"],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
+  "POST /deployments/:id/access": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "DeploymentGrantsController.grant",
+    "params": ["id:deployment"],
     "queryIds": [],
     "bodyIds": [],
     "unseeded": []

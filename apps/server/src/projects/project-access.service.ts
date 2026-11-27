@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException
 } from '@nestjs/common';
+import { DeploymentGrantsService, type GrantRole } from './deployment-grants.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { AuthorizationService } from '../auth/authorization.service';
@@ -39,7 +40,8 @@ export class ProjectAccessService {
     private readonly usersService: UsersService,
     private readonly authz: AuthorizationService,
     private readonly membershipCache: MembershipCacheService,
-    private readonly instanceSettings: InstanceSettingsService
+    private readonly instanceSettings: InstanceSettingsService,
+    private readonly grants: DeploymentGrantsService
   ) {
     this.domainBudget = new DomainBudget(prisma);
   }
@@ -193,6 +195,11 @@ export class ProjectAccessService {
     return this.membershipCache.resolveUserId(sub);
   }
 
+  async grantedDeployments(sub: string): Promise<Map<string, GrantRole>> {
+    const userId = (await this.membershipCache.resolveUserId(sub)) ?? sub;
+    return this.grants.grantedDeploymentIds(userId);
+  }
+
   async buildProjectAccessFilter(userId: string, requestedOrgId?: string) {
     const sessionOrgId = requestAuthStorage.getStore()?.sessionOrgId;
     if (sessionOrgId && requestedOrgId && requestedOrgId !== sessionOrgId) return null;
@@ -263,7 +270,8 @@ export class ProjectAccessService {
     const access = await this.authz.resolveProjectAccess(
       dep.projectId,
       dep.project.organizationId,
-      user.id
+      user.id,
+      dep.id
     );
     if (!access || !access.canView) {
       throw new NotFoundException(`Deployment ${deploymentId} not found`);

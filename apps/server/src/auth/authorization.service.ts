@@ -36,7 +36,7 @@ export interface OrgAccess {
 export interface ProjectAccess {
   projectId: string;
   organizationId: string;
-  source: 'orgAdmin' | 'projectMember' | 'superadmin';
+  source: 'orgAdmin' | 'projectMember' | 'superadmin' | 'deploymentGrant';
   orgRole: OrganizationRole | null;
   projectRoleName: ProjectRoleName | null;
   canView: boolean;
@@ -348,13 +348,49 @@ export class AuthorizationService {
    * Resolve a user's effective access to a project.
    * Returns null if the user has no path to the project (not org member, not project member).
    */
-  async getProjectAccess(projectId: string, userId: string): Promise<ProjectAccess | null> {
+  async getProjectAccess(
+    projectId: string,
+    userId: string,
+    deploymentId?: string
+  ): Promise<ProjectAccess | null> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: { id: true, organizationId: true }
     });
     if (!project) return null;
-    return this.resolveProjectAccess(project.id, project.organizationId, userId);
+    return this.resolveProjectAccess(project.id, project.organizationId, userId, deploymentId);
+  }
+
+  /**
+   * A grant gives one member a project role on one deployment and nothing else
+   * in the project. It is only consulted by callers that name the deployment,
+   * so every project-level check keeps refusing the grantee. Admin is not a
+   * grantable role: a grant never manages members or deletes the project.
+   */
+  private async resolveDeploymentGrant(
+    projectId: string,
+    organizationId: string,
+    userId: string,
+    deploymentId: string
+  ): Promise<'viewer' | 'member' | null> {
+    const tokenCtx = requestAuthStorage.getStore();
+    if (tokenCtx?.tokenProjectIds?.length && !tokenCtx.tokenProjectIds.includes(projectId)) {
+      return null;
+    }
+    if (tokenCtx?.sessionOrgId && tokenCtx.sessionOrgId !== organizationId) return null;
+    const [orgMember, grant] = await Promise.all([
+      this.prisma.organizationMember.findFirst({
+        where: { organizationId, userId, status: 'active' },
+        select: { role: true }
+      }),
+      this.prisma.deploymentGrant.findUnique({
+        where: { deploymentId_userId: { deploymentId, userId } },
+        select: { projectId: true, role: true }
+      })
+    ]);
+    if (!orgMember || !grant || grant.projectId !== projectId) return null;
+    if (await this.blockedByOrgSso(organizationId, orgMember.role)) return null;
+    return grant.role === 'member' ? 'member' : 'viewer';
   }
 
   /**
@@ -362,6 +398,31 @@ export class AuthorizationService {
    * has the organizationId on hand (lets us avoid a redundant query in hot paths).
    */
   async resolveProjectAccess(
+    projectId: string,
+    organizationId: string,
+    userId: string,
+    deploymentId?: string
+  ): Promise<ProjectAccess | null> {
+    const base = await this.resolveBaseProjectAccess(projectId, organizationId, userId);
+    if (!deploymentId || base?.canEdit) return base;
+    const role = await this.resolveDeploymentGrant(projectId, organizationId, userId, deploymentId);
+    if (!role) return base;
+    const canEdit = role === 'member';
+    if (base) return { ...base, canView: true, canEdit: base.canEdit || canEdit };
+    return {
+      projectId,
+      organizationId,
+      source: 'deploymentGrant',
+      orgRole: null,
+      projectRoleName: role,
+      canView: true,
+      canEdit,
+      canManageMembers: false,
+      canDelete: false
+    };
+  }
+
+  private async resolveBaseProjectAccess(
     projectId: string,
     organizationId: string,
     userId: string
@@ -476,8 +537,12 @@ export class AuthorizationService {
   }
 
   /** View access. Throws 404 (not 403) when the user has no path to the project. */
-  async requireProjectView(projectId: string, userId: string): Promise<ProjectAccess> {
-    const access = await this.getProjectAccess(projectId, userId);
+  async requireProjectView(
+    projectId: string,
+    userId: string,
+    deploymentId?: string
+  ): Promise<ProjectAccess> {
+    const access = await this.getProjectAccess(projectId, userId, deploymentId);
     if (!access || !access.canView) {
       throw new NotFoundException('Project not found');
     }
@@ -488,9 +553,10 @@ export class AuthorizationService {
   async requireProjectEdit(
     projectId: string,
     userId: string,
-    action = 'modify this project'
+    action = 'modify this project',
+    deploymentId?: string
   ): Promise<ProjectAccess> {
-    const access = await this.requireProjectView(projectId, userId);
+    const access = await this.requireProjectView(projectId, userId, deploymentId);
     if (!access.canEdit) {
       throw new ForbiddenException(`Your role doesn't allow you to ${action}`);
     }

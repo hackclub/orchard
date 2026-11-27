@@ -275,6 +275,7 @@
 		'behavior',
 		'notifications',
 		'audit',
+		'access',
 		'danger'
 	];
 
