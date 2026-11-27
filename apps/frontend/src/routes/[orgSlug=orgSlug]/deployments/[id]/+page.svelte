@@ -40,7 +40,8 @@
 		subscribeOrgEvents,
 		sseStatusFor,
 		earlyAccessFlag,
-		instanceFeatures
+		instanceFeatures,
+		pinnedItems
 	} from '$lib/stores';
 	import { env } from '$env/dynamic/public';
 	import { invalidate } from '$app/navigation';
@@ -1669,6 +1670,7 @@
 				title: 'App deleted',
 				color: 'success'
 			});
+			pinnedItems.unpin(deployment.id);
 			if (deployment.project?.slug) {
 				goto(`/${orgSlug}/projects/${deployment.project.slug}`);
 			} else {

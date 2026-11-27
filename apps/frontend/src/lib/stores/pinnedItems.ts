@@ -1,12 +1,8 @@
 import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
+import { pruneStalePins, type PinnedItem } from '$lib/utils/pinned-items';
 
-export interface PinnedItem {
-	id: string;
-	name: string;
-	type: 'project' | 'deployment';
-	href: string;
-}
+export type { PinnedItem };
 
 const STORAGE_KEY = 'pinned-sidebar-items';
 const STORAGE_VERSION_KEY = 'pinned-sidebar-version';
@@ -64,6 +60,15 @@ export const pinnedItems = {
 		} else {
 			this.pin(item);
 		}
+	},
+
+	pruneStale(orgSlug: string, deploymentIds: Iterable<string>, projectIds: Iterable<string>) {
+		store.update((items) => {
+			const updated = pruneStalePins(items, orgSlug, deploymentIds, projectIds);
+			if (updated.length === items.length) return items;
+			saveToStorage(updated);
+			return updated;
+		});
 	},
 
 	isPinned(id: string): boolean {

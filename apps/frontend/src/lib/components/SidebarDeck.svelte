@@ -154,6 +154,16 @@
 			.map((i) => ({ ...i, live: byId.get(i.id) ?? null }));
 	});
 
+	$effect(() => {
+		const data = overviewQuery.data;
+		if (!data || !orgSlug) return;
+		pinnedItems.pruneStale(
+			orgSlug,
+			(data.deployments ?? []).map((d: { id: string }) => d.id),
+			(data.projects ?? []).map((p: { id: string }) => p.id)
+		);
+	});
+
 	const EXPANDED_W = SIDEBAR_EXPANDED_W;
 	const COLLAPSED_W = SIDEBAR_COLLAPSED_W;
 	const RAIL_SWAP_T = 0.45;
