@@ -122,7 +122,7 @@ export function validateDeviceRequest(
   if (typeof input !== 'object' || Array.isArray(input)) {
     throw new Error('Devices must be an object of resource name to count');
   }
-  const out: DeviceRequest = {};
+  const out = new Map<string, number>();
   for (const [resource, count] of Object.entries(input as Record<string, unknown>)) {
     if (!isDeviceResource(resource)) {
       throw new Error(`${resource} isn't a device resource name, such as nvidia.com/gpu`);
@@ -135,7 +135,7 @@ export function validateDeviceRequest(
     if (count === 0) continue;
     if (!cls) {
       if (stored[resource] === count) {
-        out[resource] = count;
+        out.set(resource, count);
         continue;
       }
       throw new Error(`${resource} isn't a device this instance offers`);
@@ -143,17 +143,17 @@ export function validateDeviceRequest(
     if (count > cls.max && stored[resource] !== count) {
       throw new Error(`${label} takes a whole number from 0 to ${cls.max}`);
     }
-    out[resource] = count;
+    out.set(resource, count);
   }
   const runtimes = new Set(
-    classes.filter((c) => out[c.resource]).map((c) => c.runtimeClassName ?? '')
+    classes.filter((c) => out.has(c.resource)).map((c) => c.runtimeClassName ?? '')
   );
   if (runtimes.size > 1) {
     throw new Error(
-      `${Object.keys(out).join(' and ')} need different runtimes, so they can't be attached together`
+      `${[...out.keys()].join(' and ')} need different runtimes, so they can't be attached together`
     );
   }
-  return out;
+  return Object.fromEntries(out);
 }
 
 export function storedDevices(value: unknown): DeviceRequest {
