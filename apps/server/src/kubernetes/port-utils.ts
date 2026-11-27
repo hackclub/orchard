@@ -91,6 +91,7 @@ export function ensureUniqueServicePorts(ports: SanitizedPortEntry[]): Sanitized
 export interface PublicPortState {
   publicEnabled: boolean;
   publicPort: number | null;
+  preserveClientIp: boolean;
 }
 
 export function publicPortKey(port: number, protocol: string | null | undefined): string {
@@ -103,6 +104,7 @@ export function snapshotPublicPortState(
     protocol: string | null;
     publicEnabled: boolean;
     publicPort: number | null;
+    preserveClientIp?: boolean;
   }[]
 ): Map<string, PublicPortState> {
   const snapshot = new Map<string, PublicPortState>();
@@ -110,7 +112,8 @@ export function snapshotPublicPortState(
     if (!port.publicEnabled || !port.publicPort) continue;
     snapshot.set(publicPortKey(port.port, port.protocol), {
       publicEnabled: true,
-      publicPort: port.publicPort
+      publicPort: port.publicPort,
+      preserveClientIp: port.preserveClientIp === true
     });
   }
   return snapshot;

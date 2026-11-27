@@ -97,6 +97,29 @@ orchard service port public enable <service-id> <port-id> --deployment <id>
 Public TCP and UDP traffic skips the HTTP layer, so [app protection](/deploy/protection/) does not apply. The service must handle its own authentication.
 :::
 
+### Keep client addresses
+
+By default, a public port uses `externalTrafficPolicy: Cluster`. Any node accepts the connection and forwards it with source NAT, so the app sees a node address instead of the visitor's. Turn on **Keep client addresses** when the app needs the real address, for example a mail server that checks SPF and blocklists, or an app that rate-limits per IP. Orchard then sets `externalTrafficPolicy: Local`.
+
+With the setting on, only nodes that run a replica of the app accept traffic on the port. On a single node, or with a load balancer that announces from those nodes only (k3s ServiceLB, MetalLB in L2 mode, Cilium L2 announcements or BGP), this needs no other change. A load balancer that sends traffic to every node drops the connections that reach a node without a replica.
+
+<Tabs syncKey="dashPlusCli">
+<TabItem label="Dashboard">
+
+Select **Keep client addresses** in the **Make public** dialog. For a port that is already public, open the port's menu and select **Keep client addresses** or **Stop keeping client addresses**. A port with the setting on shows a **Client IP** badge.
+
+</TabItem>
+<TabItem label="CLI">
+
+```sh
+orchard service port public enable <service-id> <port-id> --deployment <id> --preserve-client-ip
+```
+
+Run the same command with `--preserve-client-ip=false` to turn it off. The port keeps its public port number either way.
+
+</TabItem>
+</Tabs>
+
 ### Troubleshoot a public address
 
 A public port or a [public database](/data/databases/#public-access) is reachable only after the cluster's load balancer assigns it an address. Orchard reads the state from Kubernetes and shows one of these states:

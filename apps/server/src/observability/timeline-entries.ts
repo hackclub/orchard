@@ -182,6 +182,7 @@ const AUDIT_TITLES: Record<string, string> = {
   'ingress.deleted': 'Domain removed',
   'service.port.public_enabled': 'Public port enabled',
   'service.port.public_disabled': 'Public port disabled',
+  'service.port.public_updated': 'Public port updated',
   'webhook_token.created': 'Webhook token created',
   'webhook_token.deleted': 'Webhook token deleted'
 };

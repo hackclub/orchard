@@ -366,6 +366,7 @@ func servicePortPublicCmd() *cobra.Command {
 
 func servicePortPublicEnableCmd() *cobra.Command {
 	var deployment string
+	var preserveClientIP bool
 	c := &cobra.Command{
 		Use:   "enable <service-id> <port-id>",
 		Short: "Expose a single service port publicly",
@@ -379,8 +380,12 @@ func servicePortPublicEnableCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			var body any
+			if cmd.Flags().Changed("preserve-client-ip") {
+				body = map[string]any{"preserveClientIp": preserveClientIP}
+			}
 			var res map[string]any
-			if err := cl.Send(cmd.Context(), http.MethodPost, servicesPath(dep, args[0], "ports", args[1], "public"), nil, &res); err != nil {
+			if err := cl.Send(cmd.Context(), http.MethodPost, servicesPath(dep, args[0], "ports", args[1], "public"), body, &res); err != nil {
 				return err
 			}
 			if host, port := pick(res, "host"), pick(res, "port"); host != "" && port != "" {
@@ -392,6 +397,7 @@ func servicePortPublicEnableCmd() *cobra.Command {
 		},
 	}
 	serviceDeploymentFlag(c, &deployment)
+	c.Flags().BoolVar(&preserveClientIP, "preserve-client-ip", false, "let the app see real client addresses; only nodes running a replica serve the port")
 	return c
 }
 

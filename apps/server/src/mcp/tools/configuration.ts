@@ -602,12 +602,23 @@ To change whether a service is external use \`set_service_exposure\`, not this.`
         deploymentId: z.guid().describe('The deployment UUID'),
         serviceId: z.guid().describe('The service UUID (from list_services)'),
         portId: z.guid().describe('The port UUID (from list_services)'),
-        public: z.boolean().describe('true to expose this port, false to take it private')
+        public: z.boolean().describe('true to expose this port, false to take it private'),
+        preserveClientIp: z
+          .boolean()
+          .optional()
+          .describe(
+            "With public true: let the app see the real client address (externalTrafficPolicy Local) instead of a node address. Needed by mail servers and anything that filters or rate-limits by client IP. Traffic is only served by nodes that run a replica. Omit to keep the port's current setting"
+          )
       }
     },
-    async ({ deploymentId, serviceId, portId, public: isPublic }) => {
+    async ({ deploymentId, serviceId, portId, public: isPublic, preserveClientIp }) => {
       const route = path`/deployments/${deploymentId}/services/${serviceId}/ports/${portId}/public`;
-      const result = isPublic ? await client.post(route) : await client.delete(route);
+      const result = isPublic
+        ? await client.post(
+            route,
+            preserveClientIp === undefined ? undefined : { preserveClientIp }
+          )
+        : await client.delete(route);
       return json(result);
     }
   );

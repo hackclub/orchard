@@ -683,7 +683,11 @@ export class TemplatesService implements OnModuleInit, OnModuleDestroy {
                 hit.service.id,
                 hit.port.id,
                 clerkId,
-                userData
+                userData,
+                {
+                  preserveClientIp:
+                    want.preserveClientIp === true || want.preserveClientIp === 'true'
+                }
               );
               if (!('publicPort' in published)) {
                 published.publicIp = result.ip;

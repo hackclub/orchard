@@ -239,6 +239,25 @@ async function main() {
     emit('service-public-port-lb', { apiVersion: 'v1', kind: 'Service', ...lb }, { user: SERVER });
 
     calls.length = 0;
+    await net.exposeDeploymentPortPublic({
+      namespace: NS,
+      deploymentName: 'app',
+      loadBalancerIp: '203.0.113.7',
+      publicPort: 31236,
+      targetPort: 25,
+      protocol: 'TCP',
+      preserveClientIp: true
+    });
+    const localLb = calls
+      .find((c) => c.method.endsWith('Service') && /create|replace/.test(c.method))!
+      .args.slice(-1)[0];
+    emit(
+      'service-public-port-lb-local',
+      { apiVersion: 'v1', kind: 'Service', ...localLb },
+      { user: SERVER }
+    );
+
+    calls.length = 0;
     await net.exposeCnpgClusterPublic({
       namespace: NS,
       clusterName: 'db',

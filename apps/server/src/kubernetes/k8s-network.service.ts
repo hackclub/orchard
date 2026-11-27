@@ -2502,6 +2502,7 @@ export class K8sNetworkService implements OnModuleInit {
     publicPort: number;
     targetPort: number;
     protocol: string;
+    preserveClientIp?: boolean;
   }): Promise<void> {
     this.ensureKubeConfig();
     const coreApi = this.kc.makeApiClient(k8s.CoreV1Api);
@@ -2527,7 +2528,7 @@ export class K8sNetworkService implements OnModuleInit {
       spec: {
         type: 'LoadBalancer',
         loadBalancerIP: options.loadBalancerIp,
-        externalTrafficPolicy: 'Cluster',
+        externalTrafficPolicy: options.preserveClientIp ? 'Local' : 'Cluster',
         selector: {
           'app.kubernetes.io/name': options.deploymentName
         },
