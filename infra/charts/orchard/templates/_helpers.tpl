@@ -401,6 +401,9 @@ true
                   key: token
             - { name: MAX_CONCURRENT_FC_BUILDS, value: {{ .Values.fcBuilder.maxConcurrentBuilds | quote }} }
             - { name: MAX_CONCURRENT_FC_BUILDS_PER_VM, value: {{ .Values.fcBuilder.maxBuildsPerVm | default 2 | quote }} }
+            {{- with .Values.fcBuilder.routing }}
+            - { name: FAST_BUILDER_ROUTING_DEFAULT, value: {{ . | quote }} }
+            {{- end }}
             {{- end }}
             {{- if and .Values.metrics.enabled (not (include "orchard.serverEnvHas" (dict "root" . "key" "VICTORIAMETRICS_URL"))) }}
             - { name: VICTORIAMETRICS_URL, value: {{ printf "http://victoriametrics.%s.svc.cluster.local:8428" .Values.metrics.namespace | quote }} }

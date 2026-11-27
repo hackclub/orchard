@@ -473,13 +473,16 @@ The chart grants the orchard-server ServiceAccount in `.namespace` permission to
 ### Fast builder (`fcBuilder.*`)
 
 Experimental. One privileged pod per node runs a Firecracker microVM per project. Deploying
-the hosts does nothing on its own: builds route here only when `serverEnabled` is true and
-the PostHog flag `firecracker-builder` (or a per-deployment override) picks the project.
+the hosts does nothing on its own: builds route here only when `serverEnabled` is true, and
+then the routing mode decides which. The defaults below are sized for a large dedicated
+build node. On an installer host, `orchardctl fast-builder enable` sizes everything to the
+machine instead. See the [fast builder guide](https://docs.orchard.hackclub.com/operate/fast-builder/).
 
 | Key | Default | Description |
 |---|---|---|
 | `fcBuilder.enabled` | `false` | Deploy the hosts in `fcBuilder.namespace` (`orchard-fc-builders`). |
 | `fcBuilder.serverEnabled` | `false` | Let the server route builds to them. |
+| `fcBuilder.routing` | `""` (`flag`) | Default routing mode: `all`, `per_app`, `off`, or `flag` (the PostHog flag `firecracker-builder`). Instance admin can change it; an app's own setting still wins. |
 | `fcBuilder.replicas` | `2` | Number of hosts. |
 | `fcBuilder.image.{name,tag,repository}` | `fc-builder`, `latest`, `""` | Image. |
 | `fcBuilder.token` | generated | Secret for the server to fc-builder API, kept across upgrades. |

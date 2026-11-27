@@ -767,11 +767,14 @@ fcBuilder:
   # Experimental fast builder: one privileged fc-builder pod per node runs a
   # Firecracker microVM per project, with that project's BuildKit cache on a
   # persistent disk image. Deploying the hosts does nothing on its own; builds
-  # only route here when serverEnabled is true AND the PostHog flag
-  # `firecracker-builder` (or a per-deployment override) picks the
-  # project. Every other build keeps using the standard builder.
+  # only route here when serverEnabled is true. Which builds then go to it is
+  # the routing mode: all, per_app, off, or flag (the PostHog flag
+  # `firecracker-builder`). Empty means flag. Instance admin can change it, and
+  # an app's own setting still overrides it. `orchardctl fast-builder enable`
+  # sizes everything below to the host.
   enabled: false
   serverEnabled: false
+  routing: ""
   namespace: orchard-fc-builders
   replicas: 2
   image:
