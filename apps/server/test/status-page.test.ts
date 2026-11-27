@@ -309,3 +309,76 @@ test('a noisy app cannot push a quiet app out of its own outage history', async 
   assert.equal(quietIncidents.length, 1);
   assert.equal(Date.parse(quietIncidents[0].startedAt), now - 10 * 24 * 3_600_000);
 });
+
+function countingPrisma(deploymentIds: string[], opts: { failFirst?: boolean } = {}) {
+  const calls = { builds: 0, transitionsInFlight: 0, transitionsPeak: 0 };
+  const none = async () => [];
+  const prisma = {
+    statusPage: {
+      findUnique: async () => {
+        calls.builds++;
+        await new Promise((r) => setTimeout(r, 20));
+        if (opts.failFirst && calls.builds === 1) throw new Error('pool timeout');
+        return {
+          slug: 'acme',
+          title: 'Acme',
+          description: null,
+          isPublic: true,
+          organizationId: 'org',
+          organization: { name: 'Acme' },
+          components: deploymentIds.map((id) => ({ kind: 'deployment', resourceId: id }))
+        };
+      }
+    },
+    deployment: {
+      findMany: async () =>
+        deploymentIds.map((id) => ({
+          id,
+          name: id,
+          displayName: null,
+          status: 'running',
+          stopped: false,
+          replicas: 1
+        }))
+    },
+    podTransition: {
+      findMany: async () => {
+        calls.transitionsInFlight++;
+        calls.transitionsPeak = Math.max(calls.transitionsPeak, calls.transitionsInFlight);
+        await new Promise((r) => setTimeout(r, 5));
+        calls.transitionsInFlight--;
+        return [];
+      }
+    },
+    k8sWorkload: { findMany: none },
+    deploymentCrashState: { findMany: none },
+    metricAlertState: { findMany: none },
+    database: { findMany: none },
+    databaseCrashState: { findMany: none }
+  };
+  return { prisma, calls };
+}
+
+const ids = (n: number) =>
+  Array.from({ length: n }, (_, i) => `d0000000-0000-0000-0000-${String(i).padStart(12, '0')}`);
+
+test('a crowd opening a status page at once shares one build instead of draining the pool', async () => {
+  const { prisma, calls } = countingPrisma(ids(40));
+  const service = new StatusPagesService(prisma as any, {} as any, {} as any);
+  const pages = await Promise.all(Array.from({ length: 500 }, () => service.render('acme')));
+  assert.equal(calls.builds, 1);
+  assert.ok(pages.every((p) => p?.components.length === 40));
+  assert.ok(calls.transitionsPeak <= 3, `${calls.transitionsPeak} history queries ran at once`);
+});
+
+test('a failed status page build is not cached, so the next visitor retries it', async () => {
+  const { prisma, calls } = countingPrisma(ids(2), { failFirst: true });
+  const service = new StatusPagesService(prisma as any, {} as any, {} as any);
+  (service as any).logger = { error() {}, warn() {} };
+  const first = await Promise.allSettled([service.render('acme'), service.render('acme')]);
+  assert.ok(first.every((r) => r.status === 'rejected'));
+  assert.equal(calls.builds, 1);
+  const page = await service.render('acme');
+  assert.equal(page?.components.length, 2);
+  assert.equal(calls.builds, 2);
+});

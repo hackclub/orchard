@@ -51,7 +51,25 @@ const RENDER_CACHE_MS = 15_000;
 const HISTORY_DAYS = 30;
 const MAX_INCIDENTS = 20;
 const TRANSITIONS_PER_DEPLOYMENT = 2000;
+const TRANSITION_QUERY_CONCURRENCY = 3;
 const MAX_PAGES_PER_ORG = 10;
+
+async function mapLimit<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const out: R[] = [];
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
 
 interface Rendered {
   at: number;
@@ -98,6 +116,8 @@ export class StatusPagesService {
   private readonly platformServicePort: number;
 
   private readonly cache = new Map<string, Rendered>();
+
+  private readonly inflight = new Map<string, Promise<PublicStatusPage | null>>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -240,8 +260,8 @@ export class StatusPagesService {
     if (nextSubdomain !== existing.subdomain) {
       await this.attachHost(row.id, nextSubdomain, existing.subdomain);
     }
-    this.cache.delete(existing.slug);
-    this.cache.delete(row.slug);
+    this.forget(existing.slug);
+    this.forget(row.slug);
     this.audit
       .log({
         action: 'status_page.updated',
@@ -264,7 +284,7 @@ export class StatusPagesService {
     if (!existing) throw new NotFoundException('Status page not found');
     await this.prisma.statusPage.delete({ where: { id: pageId } });
     if (existing.subdomain) await this.deleteIngress(existing.subdomain);
-    this.cache.delete(existing.slug);
+    this.forget(existing.slug);
     this.audit
       .log({
         action: 'status_page.deleted',
@@ -297,22 +317,37 @@ export class StatusPagesService {
   async render(slug: string): Promise<PublicStatusPage | null> {
     const cached = this.cache.get(slug);
     if (cached && Date.now() - cached.at < RENDER_CACHE_MS) return cached.payload;
+    return this.inflight.get(slug) ?? this.rebuild(slug);
+  }
+
+  private forget(slug: string) {
+    this.cache.delete(slug);
+    this.inflight.delete(slug);
+  }
+
+  private rebuild(slug: string): Promise<PublicStatusPage | null> {
     const started = Date.now();
-    let payload: PublicStatusPage | null;
-    try {
-      payload = await this.build(slug);
-    } catch (error) {
-      this.logger.error(
-        `status page ${JSON.stringify(slug)} failed after ${Date.now() - started}ms: ${(error as Error)?.message ?? error}`
-      );
-      throw error;
-    }
-    this.cache.set(slug, { at: Date.now(), payload });
-    if (this.cache.size > 500) {
-      const oldest = [...this.cache.entries()].sort((a, b) => a[1].at - b[1].at)[0];
-      if (oldest) this.cache.delete(oldest[0]);
-    }
-    return payload;
+    const pending: Promise<PublicStatusPage | null> = this.build(slug).then(
+      (payload) => {
+        if (this.inflight.get(slug) !== pending) return payload;
+        this.inflight.delete(slug);
+        this.cache.set(slug, { at: Date.now(), payload });
+        if (this.cache.size > 500) {
+          const oldest = [...this.cache.entries()].sort((a, b) => a[1].at - b[1].at)[0];
+          if (oldest) this.cache.delete(oldest[0]);
+        }
+        return payload;
+      },
+      (error) => {
+        if (this.inflight.get(slug) === pending) this.inflight.delete(slug);
+        this.logger.error(
+          `status page ${JSON.stringify(slug)} failed after ${Date.now() - started}ms: ${(error as Error)?.message ?? error}`
+        );
+        throw error;
+      }
+    );
+    this.inflight.set(slug, pending);
+    return pending;
   }
 
   private async build(slug: string): Promise<PublicStatusPage | null> {
@@ -354,19 +389,17 @@ export class StatusPagesService {
           where: { targetId: { in: deploymentIds }, notifiedAt: { not: null }, okSince: null },
           select: { targetId: true }
         }),
-        Promise.all(
-          deploymentIds.map((deploymentId) =>
-            this.prisma.podTransition.findMany({
-              where: {
-                deploymentId,
-                at: { gte: since },
-                toStatus: { in: ['crashing', 'failed', 'ready'] }
-              },
-              select: { deploymentId: true, podName: true, toStatus: true, at: true },
-              orderBy: { at: 'desc' },
-              take: TRANSITIONS_PER_DEPLOYMENT
-            })
-          )
+        mapLimit(deploymentIds, TRANSITION_QUERY_CONCURRENCY, (deploymentId) =>
+          this.prisma.podTransition.findMany({
+            where: {
+              deploymentId,
+              at: { gte: since },
+              toStatus: { in: ['crashing', 'failed', 'ready'] }
+            },
+            select: { deploymentId: true, podName: true, toStatus: true, at: true },
+            orderBy: { at: 'desc' },
+            take: TRANSITIONS_PER_DEPLOYMENT
+          })
         ).then((rows) => {
           for (const r of rows) {
             if (r.length === TRANSITIONS_PER_DEPLOYMENT) {
