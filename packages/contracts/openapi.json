@@ -27093,6 +27093,10 @@
                         "null"
                       ]
                     },
+                    "imageAutoUpdate": {
+                      "description": "Roll out new pushes of the image tag by themselves.",
+                      "type": "boolean"
+                    },
                     "imagePullPolicy": {
                       "description": "The override. null means it is derived from the image tag.",
                       "enum": [

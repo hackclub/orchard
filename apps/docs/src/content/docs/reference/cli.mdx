@@ -15,7 +15,7 @@ brew install --cask leafdtk/tap/orchard-cli
 ```
 
 Every command accepts `-o json` for machine-readable output, and `--org` / `--env` to
-override the saved context. **433 commands** are available.
+override the saved context. **435 commands** are available.
 
 ## alert
 
@@ -1556,6 +1556,27 @@ orchard deploy delete <id>
 ```
 
 Aliases: `rm`
+
+### `orchard deploy devices`
+
+Attach host devices such as GPUs
+
+```bash
+orchard deploy devices
+```
+
+### `orchard deploy devices set`
+
+Replace the devices attached to every pod
+
+```bash
+orchard deploy devices set <id>
+```
+
+| Flag | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--device` | stringArray | `[]` | device to attach, as resource=count (repeatable) |
+| `--none` | bool | `false` | detach every device |
 
 ### `orchard deploy env`
 
