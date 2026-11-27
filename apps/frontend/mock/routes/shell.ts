@@ -186,6 +186,10 @@ export function shellRoutes(r: Router, { store, hub, log }: MockContext) {
 		superBuilds: true,
 		resourceLimits: store.state.resourceLimits ?? 'on',
 		fastBuilderRouting: store.state.fastBuilderRouting ?? 'flag',
+		devices: [
+			{ resource: 'nvidia.com/gpu', label: 'NVIDIA GPU', max: 1 },
+			{ resource: 'squat.ai/dri', label: 'Intel GPU (/dev/dri)', max: 2 }
+		],
 		grafts: [],
 		storage: storageFeatures
 	}));

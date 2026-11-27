@@ -12,6 +12,10 @@ const SERVER = 'system:serviceaccount:orchard:orchard-server';
 process.env.TENANT_RUNTIME_CLASS = 'gvisor';
 process.env.K8S_INGRESS_CLASS = 'haproxy';
 process.env.CERT_CLUSTER_ISSUER = 'letsencrypt-prod';
+process.env.DEVICE_CLASSES = JSON.stringify([
+  { resource: 'nvidia.com/gpu', label: 'NVIDIA GPU', runtimeClassName: 'nvidia' },
+  { resource: 'squat.ai/dri', label: 'Intel GPU' }
+]);
 
 type Call = { method: string; args: any[] };
 
@@ -147,6 +151,31 @@ async function main() {
           { apiVersion: 'v1', kind: 'PersistentVolumeClaim', ...pvc.args[1] },
           { user: SERVER }
         );
+    }
+  });
+
+  await section('devices', async () => {
+    for (const [tag, devices] of [
+      ['gpu', { 'nvidia.com/gpu': 1 }],
+      ['dri', { 'squat.ai/dri': 1 }]
+    ] as const) {
+      const calls: Call[] = [];
+      const kube = mkKube(calls, {
+        readNamespacedService: () => ({ body: { spec: { ports: [] }, status: {} } })
+      });
+      const svc = new (K8sWorkloadService as any)({}, kube, {}, {});
+      await svc.createDeployment({
+        namespace: NS,
+        name: `app-${tag}`,
+        image: 'registry.example.com/org/app:1',
+        replicas: 1,
+        ports: [{ name: 'http', containerPort: 8096, servicePort: 80, protocol: 'TCP' }],
+        serviceType: 'ClusterIP',
+        resources: { cpuMilli: 2000, memoryBytes: 2048 * 1024 * 1024 },
+        devices
+      });
+      const deployment = calls.find((c) => c.method === 'createNamespacedDeployment')!.args[1];
+      emit(`pod-app-${tag}`, podFrom(deployment));
     }
   });
 

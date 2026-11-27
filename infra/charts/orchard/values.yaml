@@ -949,6 +949,9 @@ tenantSandbox:
   enabled: false
   runtimeClassName: gvisor
 
+devices:
+  classes: []
+
 # PriorityClass for the platform's own pods (server, worker, frontend, MCP, Redis,
 # Postgres and pooler, logs and metrics stores, object storage, R2 proxy). It
 # makes the scheduler place them before tenant workloads, which keep the default

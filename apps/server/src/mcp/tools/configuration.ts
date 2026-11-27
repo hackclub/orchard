@@ -327,6 +327,28 @@ Changing this rolls the pods on its own; no separate restart is needed.`,
   );
 
   server.registerTool(
+    'update_deployment_devices',
+    {
+      description: `Attach host devices, such as a GPU, to every pod of a deployment.
+
+Devices are extended resources a device plugin advertises on the node, for example \`nvidia.com/gpu\` or \`squat.ai/dri\` for /dev/dri. Only the devices the instance operator offers are accepted; \`GET /instance/features\` lists them under \`devices\` with a per-app \`max\`.
+
+Pass the full set you want. A name left out or set to 0 is detached, and null detaches everything. A device the instance no longer offers can stay at its current count or be detached, but not added or changed. Pods restart to pick up the change and only schedule on a node with a free device, so a pod stuck in Pending with "Insufficient nvidia.com/gpu" means every one is taken.`,
+      inputSchema: {
+        deploymentId: z.guid().describe('The deployment UUID'),
+        devices: z
+          .record(z.string(), z.number().int().min(0))
+          .nullable()
+          .describe('Extended resource name to count, for example {"nvidia.com/gpu": 1}')
+      }
+    },
+    async ({ deploymentId, devices }) => {
+      const result = await client.patch(path`/deployments/${deploymentId}/devices`, { devices });
+      return json(result);
+    }
+  );
+
+  server.registerTool(
     'list_registry_credentials',
     {
       description: `List the container registries a project can pull private images from. Passwords and tokens are never returned, only the registry host and username.

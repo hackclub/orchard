@@ -92,6 +92,33 @@ The value you select is the container's limit. If a superadmin has [turned resou
 When you change resources through the API, send every field you want to keep. An omitted value falls back to the organization default, which may be smaller than the current size.
 :::
 
+## Attach a GPU or other device
+
+An app can use a host device, such as a GPU for transcoding or inference, when your instance offers one. Only the devices that a superadmin [makes available](/operate/devices/) appear. If none do, the **Devices** section is hidden.
+
+<Tabs syncKey="dashPlusCli">
+<TabItem label="Dashboard">
+
+1. Open the app.
+2. Go to **Settings** > **Resources**.
+3. In **Devices**, turn on the device, or select how many to attach.
+
+</TabItem>
+<TabItem label="CLI">
+
+```sh
+orchard deploy devices set <id> --device nvidia.com/gpu=1
+```
+
+Pass `--device` once for each device. A device you leave out is detached, and `--none` detaches all of them.
+
+</TabItem>
+</Tabs>
+
+The app restarts to pick up the change. Each pod gets its own device, so a pod that cannot get one stays in **Pending** until a device is free. With one GPU, run one replica.
+
+An app with a device always uses the **Recreate** [update strategy](/deploy/update-strategies/), so that the old pod releases the device before the new one starts. Attaching a device switches the app to Recreate, and rolling and blue-green updates are unavailable until you detach it.
+
 ## Set health checks
 
 Health checks decide whether a pod counts as ready. An app that runs but fails its check shows as failing. Orchard applies the checks again on each rebuild.

@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-dri-7d9f8c5b6-x2k4p
+  labels:
+    app.kubernetes.io/name: app-dri
+    app.kubernetes.io/managed-by: orchard
+    pod-template-hash: 7d9f8c5b6
+  namespace: orchard-policy-test
+spec:
+  automountServiceAccountToken: false
+  runtimeClassName: gvisor
+  containers:
+    - name: app-dri
+      image: registry.example.com/org/app:1
+      imagePullPolicy: IfNotPresent
+      ports:
+        - name: http
+          containerPort: 8096
+          protocol: TCP
+      env:
+        - name: HOST
+          value: 0.0.0.0
+        - name: FORCE_COLOR
+          value: '1'
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+          add:
+            - SETUID
+            - SETGID
+            - CHOWN
+            - FOWNER
+            - DAC_OVERRIDE
+            - SYS_CHROOT
+        seccompProfile:
+          type: RuntimeDefault
+      resources:
+        requests:
+          cpu: 200m
+          memory: 2048Mi
+          squat.ai/dri: '1'
+        limits:
+          cpu: 2000m
+          memory: 2048Mi
+          squat.ai/dri: '1'

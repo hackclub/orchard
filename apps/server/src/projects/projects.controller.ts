@@ -781,6 +781,7 @@ export class ProjectsController {
       imagePullPolicy?: 'Always' | 'IfNotPresent';
       environmentId?: string;
       startCommand?: string | null;
+      devices?: Record<string, number> | null;
     },
     @Request() req
   ) {
@@ -799,7 +800,8 @@ export class ProjectsController {
       placementOverride,
       imagePullPolicy,
       environmentId,
-      startCommand
+      startCommand,
+      devices
     } = body;
     const result = await this.deployments.createDeployment(
       id,
@@ -818,7 +820,8 @@ export class ProjectsController {
         placementOverride,
         imagePullPolicy,
         environmentId,
-        startCommand
+        startCommand,
+        devices
       },
       req.user.sub,
       {
@@ -1300,6 +1303,28 @@ export class DeploymentsController {
       imageUrl: req.user.imageUrl
     });
     return this.deployments.getDeploymentNextSteps(id, user.id);
+  }
+
+  @Patch(':id/devices')
+  async updateDeploymentDevices(
+    @Param('id') id: string,
+    @Body() body: { devices: Record<string, number> | null },
+    @Request() req
+  ) {
+    const { user, access } = await this.projectAccess.assertDeploymentView(id, req.user.sub, {
+      email: req.user.email,
+      username: req.user.username,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName,
+      imageUrl: req.user.imageUrl
+    });
+    if (!access.canEdit) {
+      throw new ForbiddenException("Your role doesn't allow you to change attached devices");
+    }
+    if (!body || typeof body !== 'object' || !('devices' in body)) {
+      throw new BadRequestException('Send devices, or null to detach every device');
+    }
+    return this.deployments.updateDeploymentDevices(id, body.devices, user.id);
   }
 
   @Patch(':id/pull-policy')

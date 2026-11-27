@@ -5,7 +5,7 @@
 | Policy | Operations | Refuses |
 | --- | --- | --- |
 | `orchard-tenant-pods` | create | host namespaces, `nodeName`, `system-*` and `orchard-*` priority classes, privileged or `procMount`, `hostPort`, capabilities beyond the Pod Security baseline, host-backed volume types |
-| `orchard-tenant-pods-hardening` | create | containers that do not drop ALL, pods outside the tenant RuntimeClass (advisory by default) |
+| `orchard-tenant-pods-hardening` | create | containers that do not drop ALL, pods outside the tenant RuntimeClass unless they request a device whose class names theirs (advisory by default) |
 | `orchard-tenant-services` | create, update | `externalIPs`, `ExternalName`, NodePort when off, LoadBalancer or LB-IPAM pinning by anyone but the server, selector-less Services other than protection proxies |
 | `orchard-tenant-endpointslices` | create, update | the server writing anything but protection-proxy slices (pinned to `protectionProxyIPs` when set) |
 | `orchard-tenant-ingresses` | create, update | annotations outside the allow-list, foreign ingress class, foreign cert-manager issuer, resource backends |
@@ -35,6 +35,7 @@
 | `allowLoadBalancer` | always `true` | |
 | `runtimeClass` | `tenantSandbox.runtimeClassName` when the sandbox is on | advisory rule skipped |
 | `databaseRuntimeClass` | `databases.runtimeClassName` | database pods are not checked |
+| `deviceRuntimeClasses` | `resource=runtimeClassName` pairs from `devices.classes` | a pod outside the tenant RuntimeClass is never excused by a device |
 | `protectionProxyIPs` | `admissionPolicies.protectionProxyIPs`, else the `server` Service ClusterIP | address pin skipped |
 | `tenantSecretsRole` | `orchard-tenant-secrets` | |
 | `pgImagePrefixes` | `admissionPolicies.pgImagePrefixes` | image rule skipped |

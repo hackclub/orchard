@@ -566,7 +566,10 @@ test('a restart with limits off drops them in the same patch as the restart', as
   assert.equal(patches[0].metadata.annotations[NO_LIMITS_ANNOTATION], 'true');
   assert.ok(patches[0].spec.template.metadata.annotations['kubectl.kubernetes.io/restartedAt']);
   assert.deepEqual(patches[0].spec.template.spec.containers, [
-    { name: 'web', resources: { requests: { cpu: '50m', memory: '64Mi' }, limits: null } }
+    {
+      name: 'web',
+      resources: { requests: { cpu: '50m', memory: '64Mi' }, limits: { cpu: null, memory: null } }
+    }
   ]);
 });
 
@@ -598,7 +601,10 @@ test('a new image with limits off drops them in the same patch', async () => {
     undefined,
     noLimits
   );
-  assert.equal(patches[0].spec.template.spec.containers[0].resources.limits, null);
+  assert.deepEqual(patches[0].spec.template.spec.containers[0].resources.limits, {
+    cpu: null,
+    memory: null
+  });
 });
 
 test('a create with limits off marks the object and sets no limits', () => {

@@ -1380,6 +1380,158 @@
  },
  {
   "expect": "allow",
+  "name": "benign/pod-app-dri",
+  "object": {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "labels": {
+     "app.kubernetes.io/managed-by": "orchard",
+     "app.kubernetes.io/name": "app-dri",
+     "pod-template-hash": "7d9f8c5b6"
+    },
+    "name": "app-dri-7d9f8c5b6-x2k4p",
+    "namespace": "orchard-policy-test"
+   },
+   "spec": {
+    "automountServiceAccountToken": false,
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "HOST",
+        "value": "0.0.0.0"
+       },
+       {
+        "name": "FORCE_COLOR",
+        "value": "1"
+       }
+      ],
+      "image": "registry.example.com/org/app:1",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "app-dri",
+      "ports": [
+       {
+        "containerPort": 8096,
+        "name": "http",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "cpu": "2000m",
+        "memory": "2048Mi",
+        "squat.ai/dri": "1"
+       },
+       "requests": {
+        "cpu": "200m",
+        "memory": "2048Mi",
+        "squat.ai/dri": "1"
+       }
+      },
+      "securityContext": {
+       "allowPrivilegeEscalation": false,
+       "capabilities": {
+        "add": [
+         "SETUID",
+         "SETGID",
+         "CHOWN",
+         "FOWNER",
+         "DAC_OVERRIDE",
+         "SYS_CHROOT"
+        ],
+        "drop": [
+         "ALL"
+        ]
+       },
+       "seccompProfile": {
+        "type": "RuntimeDefault"
+       }
+      }
+     }
+    ],
+    "runtimeClassName": "gvisor"
+   }
+  }
+ },
+ {
+  "expect": "allow",
+  "name": "benign/pod-app-gpu",
+  "object": {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "labels": {
+     "app.kubernetes.io/managed-by": "orchard",
+     "app.kubernetes.io/name": "app-gpu",
+     "pod-template-hash": "7d9f8c5b6"
+    },
+    "name": "app-gpu-7d9f8c5b6-x2k4p",
+    "namespace": "orchard-policy-test"
+   },
+   "spec": {
+    "automountServiceAccountToken": false,
+    "containers": [
+     {
+      "env": [
+       {
+        "name": "HOST",
+        "value": "0.0.0.0"
+       },
+       {
+        "name": "FORCE_COLOR",
+        "value": "1"
+       }
+      ],
+      "image": "registry.example.com/org/app:1",
+      "imagePullPolicy": "IfNotPresent",
+      "name": "app-gpu",
+      "ports": [
+       {
+        "containerPort": 8096,
+        "name": "http",
+        "protocol": "TCP"
+       }
+      ],
+      "resources": {
+       "limits": {
+        "cpu": "2000m",
+        "memory": "2048Mi",
+        "nvidia.com/gpu": "1"
+       },
+       "requests": {
+        "cpu": "200m",
+        "memory": "2048Mi",
+        "nvidia.com/gpu": "1"
+       }
+      },
+      "securityContext": {
+       "allowPrivilegeEscalation": false,
+       "capabilities": {
+        "add": [
+         "SETUID",
+         "SETGID",
+         "CHOWN",
+         "FOWNER",
+         "DAC_OVERRIDE",
+         "SYS_CHROOT"
+        ],
+        "drop": [
+         "ALL"
+        ]
+       },
+       "seccompProfile": {
+        "type": "RuntimeDefault"
+       }
+      }
+     }
+    ],
+    "runtimeClassName": "nvidia"
+   }
+  }
+ },
+ {
+  "expect": "allow",
   "name": "benign/pod-app-nodeport",
   "object": {
    "apiVersion": "v1",
@@ -3265,6 +3417,77 @@
      }
     ],
     "runtimeClassName": "gvisor"
+   }
+  }
+ },
+ {
+  "denied-by": "RuntimeClass",
+  "expect": "deny",
+  "name": "hostile/pod-device-runtimeclass-other-device",
+  "object": {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "labels": {
+     "app.kubernetes.io/name": "evil"
+    },
+    "name": "evil",
+    "namespace": "orchard-policy-test"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.example.com/org/app:1",
+      "name": "c",
+      "resources": {
+       "limits": {
+        "squat.ai/dri": "1"
+       }
+      },
+      "securityContext": {
+       "allowPrivilegeEscalation": false,
+       "capabilities": {
+        "drop": [
+         "ALL"
+        ]
+       }
+      }
+     }
+    ],
+    "runtimeClassName": "nvidia"
+   }
+  }
+ },
+ {
+  "denied-by": "RuntimeClass",
+  "expect": "deny",
+  "name": "hostile/pod-device-runtimeclass-without-device",
+  "object": {
+   "apiVersion": "v1",
+   "kind": "Pod",
+   "metadata": {
+    "labels": {
+     "app.kubernetes.io/name": "evil"
+    },
+    "name": "evil",
+    "namespace": "orchard-policy-test"
+   },
+   "spec": {
+    "containers": [
+     {
+      "image": "registry.example.com/org/app:1",
+      "name": "c",
+      "securityContext": {
+       "allowPrivilegeEscalation": false,
+       "capabilities": {
+        "drop": [
+         "ALL"
+        ]
+       }
+      }
+     }
+    ],
+    "runtimeClassName": "nvidia"
    }
   }
  },

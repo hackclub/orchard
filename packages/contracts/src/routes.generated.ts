@@ -248,6 +248,7 @@ export const routes: GeneratedRoute[] = [
   { method: 'GET', path: '/deployments/:id/build-runs', auth: 'authenticated' },
   { method: 'GET', path: '/deployments/:id/build-runs/:runId/logs', auth: 'authenticated' },
   { method: 'POST', path: '/deployments/:id/cancel', auth: 'authenticated' },
+  { method: 'PATCH', path: '/deployments/:id/devices', auth: 'authenticated' },
   { method: 'GET', path: '/deployments/:id/diagnosis', auth: 'authenticated' },
   { method: 'PATCH', path: '/deployments/:id/disruption-budget', auth: 'authenticated' },
   { method: 'PUT', path: '/deployments/:id/env', auth: 'authenticated' },

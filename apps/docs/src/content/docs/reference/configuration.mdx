@@ -373,6 +373,7 @@ values for you.
 | `TENANT_EGRESS_NAMESPACES` |  | Namespaces a tenant pod may reach. Empty means the ingress namespaces without Orchard's own, so tenants can't connect to the server or platform database. |
 | `TENANT_INGRESS_NAMESPACES` |  | Namespaces of the ingress controllers, comma separated. Empty means network,orchard. |
 | `TENANT_RUNTIME_CLASS` |  | RuntimeClass tenant pods run under, such as gvisor. Empty uses the cluster default. |
+| `DEVICE_CLASSES` |  | Host devices apps may attach, as a JSON array. Each entry is an extended resource a device plugin advertises: &#123;"resource":"nvidia.com/gpu","label":"NVIDIA GPU","runtimeClassName":"nvidia","max":1&#125;. runtimeClassName replaces TENANT_RUNTIME_CLASS on pods that attach it. Empty offers no devices. |
 | `TENANT_INGRESS_PORTS` |  | TCP ports a tenant pod may reach on the ingress namespaces. Empty means 80,443,8000,8080,8443, the serving ports of HAProxy, Traefik and nginx. The controller's stats and pprof ports are left out because they list every tenant's backend. |
 | `TENANT_EGRESS_BLOCK_PORTS` |  | Outbound TCP ports tenant pods may not use on the public internet, as a comma-separated list. Empty blocks nothing. |
 | `TENANT_DENY_ENTITIES` |  | Cilium entities tenant pods may not reach, even if an allow rule would match. Empty means host,remote-node,kube-apiserver. Use "none" to skip the policy. Set it to "none" if the ingress controller runs with hostNetwork and tenant apps call their own public hostname. |

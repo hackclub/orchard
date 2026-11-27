@@ -517,6 +517,92 @@ back to following the tag. A pinned value survives an image change.`,
 	return c
 }
 
+func deployDevicesCmd() *cobra.Command {
+	c := &cobra.Command{
+		Use:   "devices",
+		Short: "Attach host devices such as GPUs",
+	}
+	c.AddCommand(deployDevicesSetCmd())
+	return c
+}
+
+func parseDeviceFlags(flags []string) (map[string]int, error) {
+	devices := map[string]int{}
+	for _, raw := range flags {
+		name, count, found := strings.Cut(raw, "=")
+		name = strings.TrimSpace(name)
+		if name == "" {
+			return nil, fmt.Errorf("--device needs a resource name, got %q", raw)
+		}
+		n := 1
+		if found {
+			parsed, err := strconv.Atoi(strings.TrimSpace(count))
+			if err != nil || parsed < 0 {
+				return nil, fmt.Errorf("--device %s needs a whole number count, got %q", name, count)
+			}
+			n = parsed
+		}
+		if _, dup := devices[name]; dup {
+			return nil, fmt.Errorf("--device %s is given more than once", name)
+		}
+		devices[name] = n
+	}
+	return devices, nil
+}
+
+func deployDevicesSetCmd() *cobra.Command {
+	var (
+		devices []string
+		none    bool
+	)
+	c := &cobra.Command{
+		Use:   "set <id>",
+		Short: "Replace the devices attached to every pod",
+		Long: `Replace the host devices attached to every pod of a deployment.
+
+A device is an extended resource a device plugin advertises on the node, such
+as nvidia.com/gpu, and the instance operator decides which ones apps may use.
+Pass --device once per resource, as name=count (the count defaults to 1).
+Anything not listed is detached, and --none detaches everything.
+
+Pods restart to pick up the change.`,
+		Example: `  orchard deploy devices set <id> --device nvidia.com/gpu=1
+  orchard deploy devices set <id> --none`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if none == (len(devices) > 0) {
+				return errors.New("pass --device at least once, or --none")
+			}
+			parsed, err := parseDeviceFlags(devices)
+			if err != nil {
+				return err
+			}
+			cl, _, err := client()
+			if err != nil {
+				return err
+			}
+			if err := cl.Send(cmd.Context(), http.MethodPatch, deployPath(args[0], "devices"), map[string]any{"devices": parsed}, nil); err != nil {
+				return err
+			}
+			parts := make([]string, 0, len(parsed))
+			for _, name := range slices.Sorted(maps.Keys(parsed)) {
+				if parsed[name] > 0 {
+					parts = append(parts, fmt.Sprintf("%s=%d", name, parsed[name]))
+				}
+			}
+			if len(parts) == 0 {
+				output.Successf("detached every device from %s", args[0])
+				return nil
+			}
+			output.Successf("%s now has %s", args[0], strings.Join(parts, ", "))
+			return nil
+		},
+	}
+	c.Flags().StringArrayVar(&devices, "device", nil, "device to attach, as resource=count (repeatable)")
+	c.Flags().BoolVar(&none, "none", false, "detach every device")
+	return c
+}
+
 func deployHealthCheckCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "health-check",

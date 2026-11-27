@@ -12,6 +12,7 @@ data:
   allowLoadBalancer: "true"
   runtimeClass: "gvisor"
   databaseRuntimeClass: ""
+  deviceRuntimeClasses: "nvidia.com/gpu=nvidia"
   protectionProxyIPs: ""
   tenantSecretsRole: "orchard-tenant-secrets"
   pgPreloadLibraries: "pg_stat_statements,pgvector,vector,timescaledb,pg_trgm,postgis"

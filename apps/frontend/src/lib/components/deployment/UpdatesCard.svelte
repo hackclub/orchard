@@ -37,7 +37,9 @@
 	};
 
 	const strategyHint = $derived(
-		hasPvcVolume ? 'Apps with storage stop everything first' : STRATEGY_HINTS[strategyValue]
+		hasPvcVolume
+			? 'Apps with storage or devices stop everything first'
+			: STRATEGY_HINTS[strategyValue]
 	);
 
 	let timer: ReturnType<typeof setTimeout> | undefined;

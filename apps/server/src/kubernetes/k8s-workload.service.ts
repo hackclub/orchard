@@ -31,11 +31,20 @@ import {
 import {
   applySizingTo,
   containerResources,
-  containerResourcesPatch,
+  appResourcesPatch,
   NO_LIMITS_ANNOTATION,
   noLimitsMetadataPatch,
   type PodSizing
 } from './resource-spec';
+import {
+  deviceQuantities,
+  deviceResourcesPatch,
+  deviceRuntimeClassName,
+  deviceRuntimeClassPatch,
+  liveDeviceQuantities,
+  withDevices,
+  type DeviceRequest
+} from './devices';
 import {
   hardenedSecurityContext,
   tenantPodAnnotations,
@@ -274,7 +283,7 @@ export class K8sWorkloadService {
             containers: [
               {
                 name: containerName,
-                resources: containerResourcesPatch(resources)
+                resources: appResourcesPatch(resources)
               }
             ]
           }
@@ -984,6 +993,8 @@ export class K8sWorkloadService {
       if (options.resources) {
         container.resources = containerResources(options.resources);
       }
+      const devices = options.devices ?? {};
+      container.resources = withDevices(container.resources, deviceQuantities(devices));
 
       if (options.healthCheck?.enabled) {
         const probes = probesFor(options.healthCheck);
@@ -1005,9 +1016,10 @@ export class K8sWorkloadService {
       // old pod to release the volume. Force Recreate whenever a PVC is in
       // the volume list, regardless of caller's preference.
       const hasPvcVolume = (options.volumes ?? []).some((v) => v.type === 'pvc');
-      const effectiveStrategy = hasPvcVolume
-        ? 'recreate'
-        : (options.deployStrategy ?? 'rollingUpdate');
+      const effectiveStrategy =
+        hasPvcVolume || Object.keys(devices).length > 0
+          ? 'recreate'
+          : (options.deployStrategy ?? 'rollingUpdate');
       const strategy: k8s.V1DeploymentStrategy =
         effectiveStrategy === 'recreate' ? { type: 'Recreate' } : rollingUpdateStrategy();
 
@@ -1042,7 +1054,7 @@ export class K8sWorkloadService {
               // pod do `selfsubjectreviews` and (more importantly) carries
               // any unintended RBAC grants out of the namespace.
               automountServiceAccountToken: false,
-              runtimeClassName: tenantRuntimeClassName(),
+              runtimeClassName: deviceRuntimeClassName(Object.keys(devices)),
               containers: [container],
               imagePullSecrets: options.imagePullSecrets?.length
                 ? options.imagePullSecrets
@@ -2237,7 +2249,7 @@ export class K8sWorkloadService {
               ? {
                   spec: {
                     containers: [
-                      { name: cleanDeploymentName, resources: containerResourcesPatch(resources) }
+                      { name: cleanDeploymentName, resources: appResourcesPatch(resources) }
                     ]
                   }
                 }
@@ -2494,6 +2506,70 @@ export class K8sWorkloadService {
     return { success: true, deployment: cleanName, namespace: cleanNamespace, policy };
   }
 
+  async updateDeploymentDevices(deploymentName: string, namespace: string, devices: DeviceRequest) {
+    this.ensureKubeConfig();
+    const api = this.kc.makeApiClient(k8s.AppsV1Api);
+    const cleanName = String(deploymentName).trim();
+    const cleanNamespace = String(namespace).trim();
+
+    try {
+      const live = await api.readNamespacedDeployment(cleanName, cleanNamespace);
+      const container = live.body.spec?.template?.spec?.containers?.find(
+        (c) => c.name === cleanName
+      );
+      if (!container) {
+        throw new NotFoundException(`Deployment ${cleanName} has no app container`);
+      }
+      const attaching = Object.keys(devices).length > 0;
+      const patch = {
+        spec: {
+          ...(attaching && live.body.spec?.strategy?.type !== 'Recreate'
+            ? { strategy: { type: 'Recreate', rollingUpdate: null } }
+            : {}),
+          template: {
+            spec: {
+              ...deviceRuntimeClassPatch(Object.keys(devices)),
+              containers: [
+                {
+                  name: cleanName,
+                  resources: deviceResourcesPatch(
+                    devices,
+                    liveDeviceQuantities(container.resources)
+                  )
+                }
+              ]
+            }
+          }
+        }
+      };
+      await api.patchNamespacedDeployment(
+        cleanName,
+        cleanNamespace,
+        patch,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { headers: { 'Content-Type': 'application/strategic-merge-patch+json' } }
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      if (error.response?.statusCode === 404) {
+        throw new NotFoundException({
+          error: 'Deployment not found',
+          message: `Deployment ${cleanName} not found in namespace ${cleanNamespace}`
+        });
+      }
+      throw new BadRequestException({
+        error: 'Failed to update devices',
+        message: error.body?.message ?? error.message
+      });
+    }
+
+    return { success: true, deployment: cleanName, namespace: cleanNamespace, devices };
+  }
+
   async updateDeploymentPullSecrets(
     deploymentName: string,
     namespace: string,
@@ -2697,27 +2773,37 @@ export class K8sWorkloadService {
       // guards existed.
       let forceRecreate = false;
       let strategy: k8s.V1DeploymentStrategy | undefined;
+      let liveDevices: string[] | null = null;
       try {
         const live = await api.readNamespacedDeployment(cleanDeploymentName, cleanNamespace);
+        const liveContainer = live.body.spec?.template?.spec?.containers?.find(
+          (c) => c.name === cleanDeploymentName
+        );
+        liveDevices = Object.keys(liveDeviceQuantities(liveContainer?.resources));
         const hasPvc = (live.body.spec?.template?.spec?.volumes ?? []).some(
           (v) => v.persistentVolumeClaim?.claimName
         );
-        forceRecreate = hasPvc && live.body.spec?.strategy?.type !== 'Recreate';
+        const pinned = hasPvc || liveDevices.length > 0;
+        forceRecreate = pinned && live.body.spec?.strategy?.type !== 'Recreate';
         if (forceRecreate) {
           strategy = { type: 'Recreate', rollingUpdate: null as any };
-        } else if (!hasPvc && live.body.spec?.strategy?.type !== 'Recreate') {
+        } else if (!pinned && live.body.spec?.strategy?.type !== 'Recreate') {
           strategy = rollingUpdateStrategy();
         }
       } catch {
         // If the read fails the patch below will fail too and report properly.
       }
+      const runtimeClassPatch =
+        liveDevices === null
+          ? {}
+          : { runtimeClassName: deviceRuntimeClassName(liveDevices) ?? null };
 
       const containerPatch = {
         name: cleanDeploymentName,
         image: cleanImage,
         securityContext: hardenedSecurityContext(),
         ...(args === undefined ? {} : { args: args?.length ? args : null }),
-        ...(resources ? { resources: containerResourcesPatch(resources) } : {}),
+        ...(resources ? { resources: appResourcesPatch(resources) } : {}),
         ...(healthCheck
           ? {
               livenessProbe:
@@ -2747,7 +2833,7 @@ export class K8sWorkloadService {
               ? { metadata: { annotations: tenantPodAnnotations() } }
               : {}),
             spec: {
-              runtimeClassName: tenantRuntimeClassName() ?? null,
+              ...runtimeClassPatch,
               containers: [containerPatch]
             }
           }

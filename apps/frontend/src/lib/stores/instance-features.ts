@@ -11,6 +11,7 @@ export interface InstanceFeatures {
 	superBuilds: boolean;
 	resourceLimits: 'on' | 'off';
 	fastBuilderRouting: 'all' | 'per_app' | 'off' | 'flag';
+	devices: { resource: string; label: string; max: number }[];
 	storage: {
 		s3: boolean;
 		backups: 'external' | 'local' | 'none';
@@ -35,6 +36,7 @@ const features = writable<InstanceFeatures>({
 	superBuilds: false,
 	resourceLimits: 'on',
 	fastBuilderRouting: 'flag',
+	devices: [],
 	storage: STORAGE_DEFAULT
 });
 let loaded = false;
@@ -55,6 +57,7 @@ export const instanceFeatures = {
 			superBuilds: false,
 			resourceLimits: 'on' as const,
 			fastBuilderRouting: 'flag' as const,
+			devices: [],
 			storage: STORAGE_DEFAULT,
 			...((await response.json()) as Partial<InstanceFeatures>)
 		};

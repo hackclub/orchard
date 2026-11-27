@@ -10903,6 +10903,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -12436,6 +12443,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -13939,6 +13953,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -15399,6 +15420,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -16899,6 +16927,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -18376,6 +18411,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -20042,6 +20084,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -21803,6 +21852,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -23279,6 +23335,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -25001,6 +25064,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -26718,6 +26788,445 @@
         ]
       }
     },
+    "/deployments/{id}/devices": {
+      "patch": {
+        "description": "Auth: authenticated (scope: deploy)",
+        "operationId": "deployments_devices_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "devices": {
+                    "additionalProperties": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "description": "The full set to attach, as extended resource name to count. A count of 0 or a missing name detaches it, and null detaches everything. Pods restart to pick it up.",
+                    "type": [
+                      "object",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "devices"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {},
+                  "properties": {
+                    "autoDeployBranch": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "autoDeployEnabled": {
+                      "type": "boolean"
+                    },
+                    "autoDeployPaths": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "buildCommand": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "builderOverride": {
+                      "enum": [
+                        "firecracker",
+                        "kubernetes",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "buildError": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "buildFromRoot": {
+                      "type": "boolean"
+                    },
+                    "buildLogs": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "buildStatus": {
+                      "type": "string"
+                    },
+                    "buildStep": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "buildStepTimestamps": {
+                      "additionalProperties": {},
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "buildType": {
+                      "enum": [
+                        "dockerfile",
+                        "railpack"
+                      ],
+                      "type": "string"
+                    },
+                    "buildWithDepot": {
+                      "type": "boolean"
+                    },
+                    "composeServiceName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "composeStackId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "cpuRequestMilli": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "createdBy": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "deployStrategy": {
+                      "enum": [
+                        "rollingUpdate",
+                        "recreate",
+                        "blueGreen"
+                      ],
+                      "type": "string"
+                    },
+                    "detectedConfig": {
+                      "additionalProperties": {},
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
+                    "dockerfileHealthCheck": {
+                      "properties": {
+                        "command": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "interval": {
+                          "type": "number"
+                        },
+                        "retries": {
+                          "type": "number"
+                        },
+                        "startPeriod": {
+                          "type": "number"
+                        },
+                        "timeout": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "command"
+                      ],
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "dockerfilePath": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "dockerfileTarget": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "effectiveImagePullPolicy": {
+                      "description": "What the cluster is actually doing, after deriving. Render this.",
+                      "enum": [
+                        "Always",
+                        "IfNotPresent"
+                      ],
+                      "type": "string"
+                    },
+                    "environmentId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "framework": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "githubBranch": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "githubInstallationId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "githubRepo": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "healthCheckCommand": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "healthCheckEnabled": {
+                      "type": "boolean"
+                    },
+                    "healthCheckInterval": {
+                      "type": "number"
+                    },
+                    "healthCheckOverride": {
+                      "type": "boolean"
+                    },
+                    "healthCheckPath": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "healthCheckPort": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "healthCheckRetries": {
+                      "type": "number"
+                    },
+                    "healthCheckTimeout": {
+                      "type": "number"
+                    },
+                    "healthCheckType": {
+                      "type": "string"
+                    },
+                    "icon": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "image": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "imagePullPolicy": {
+                      "description": "The override. null means it is derived from the image tag.",
+                      "enum": [
+                        "Always",
+                        "IfNotPresent",
+                        null
+                      ],
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "installCommand": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "livenessEnabled": {
+                      "type": "boolean"
+                    },
+                    "memoryRequestBytes": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "namespace": {
+                      "type": "string"
+                    },
+                    "outputDirectory": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "persistentBuildCache": {
+                      "type": "boolean"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "readinessEnabled": {
+                      "type": "boolean"
+                    },
+                    "replicas": {
+                      "type": "number"
+                    },
+                    "rootDirectory": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "startCommand": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "startupEnabled": {
+                      "type": "boolean"
+                    },
+                    "startupFailureThreshold": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "stopped": {
+                      "type": "boolean"
+                    },
+                    "tailscaleExposed": {
+                      "type": "boolean"
+                    },
+                    "tailscaleHostname": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "templateInstanceId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "updatedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "projectId",
+                    "name",
+                    "namespace",
+                    "replicas",
+                    "stopped",
+                    "status",
+                    "buildStatus",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "summary": "Attach or detach host devices such as GPUs",
+        "tags": [
+          "deployments"
+        ]
+      }
+    },
     "/deployments/{id}/diagnosis": {
       "get": {
         "description": "Auth: authenticated",
@@ -26985,6 +27494,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -28667,6 +29183,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -30318,6 +30841,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -30745,6 +31275,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -31978,6 +32515,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -34769,6 +35313,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -35190,6 +35741,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -36759,6 +37317,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -37408,6 +37973,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -39937,6 +40509,13 @@
                         "null"
                       ]
                     },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
+                    },
                     "dockerfileHealthCheck": {
                       "properties": {
                         "command": {
@@ -40400,6 +40979,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -50570,6 +51156,13 @@
                             "object",
                             "null"
                           ]
+                        },
+                        "devices": {
+                          "additionalProperties": {
+                            "type": "number"
+                          },
+                          "description": "Host devices attached to each pod, as extended resource name to count.",
+                          "type": "object"
                         },
                         "dockerfileHealthCheck": {
                           "properties": {
@@ -61628,6 +62221,13 @@
                           "null"
                         ]
                       },
+                      "devices": {
+                        "additionalProperties": {
+                          "type": "number"
+                        },
+                        "description": "Host devices attached to each pod, as extended resource name to count.",
+                        "type": "object"
+                      },
                       "dockerfileHealthCheck": {
                         "properties": {
                           "command": {
@@ -62970,6 +63570,17 @@
                       "null"
                     ]
                   },
+                  "devices": {
+                    "additionalProperties": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "description": "Host devices to attach, as extended resource name to count, for example {\"nvidia.com/gpu\": 1}. Only the devices the instance offers are accepted.",
+                    "type": [
+                      "object",
+                      "null"
+                    ]
+                  },
                   "env": {
                     "items": {
                       "properties": {
@@ -63226,6 +63837,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {
@@ -64870,6 +65488,13 @@
                         "object",
                         "null"
                       ]
+                    },
+                    "devices": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Host devices attached to each pod, as extended resource name to count.",
+                      "type": "object"
                     },
                     "dockerfileHealthCheck": {
                       "properties": {

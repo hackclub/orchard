@@ -296,6 +296,9 @@ true
             {{- if .Values.tenantSandbox.enabled }}
             - { name: TENANT_RUNTIME_CLASS, value: {{ .Values.tenantSandbox.runtimeClassName | quote }} }
             {{- end }}
+            {{- if .Values.devices.classes }}
+            - { name: DEVICE_CLASSES, value: {{ .Values.devices.classes | toJson | quote }} }
+            {{- end }}
             - { name: BUILDER_SIDECAR_PUSH, value: {{ .Values.builderSandbox.sidecarPush | quote }} }
             - { name: BUILDER_PUSHER_IMAGE, value: {{ .Values.builderSandbox.pusherImage | quote }} }
             {{- if .Values.builderSandbox.enabled }}

@@ -1663,6 +1663,18 @@ export function deploymentRoutes(r: Router, { store }: MockContext) {
 			})
 		);
 	}
+	r.patch(
+		'/deployments/:id/devices',
+		withDep((d, { body }) => {
+			const devices = body?.devices ?? {};
+			remember(d, {
+				devices,
+				...(Object.keys(devices).length > 0 ? { deployStrategy: 'recreate' } : {})
+			});
+			changed(d);
+			return deploymentDetail(store, d);
+		})
+	);
 	for (const path of ['strategy', 'disruption-budget', 'pull-policy']) {
 		r.patch(
 			`/deployments/:id/${path}`,

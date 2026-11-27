@@ -1,0 +1,18 @@
+# denied-by: RuntimeClass
+"apiVersion": "v1"
+"kind": "Pod"
+"metadata":
+  "name": "evil"
+  "labels":
+    "app.kubernetes.io/name": "evil"
+  "namespace": "orchard-policy-test"
+"spec":
+  "runtimeClassName": "nvidia"
+  "containers":
+    - "name": "c"
+      "image": "registry.example.com/org/app:1"
+      "securityContext":
+        "allowPrivilegeEscalation": false
+        "capabilities":
+          "drop":
+            - "ALL"

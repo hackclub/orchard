@@ -201,6 +201,7 @@
 		totalCpuUsage?: number | null;
 		totalMemoryUsage?: number | null;
 		deployStrategy?: 'rollingUpdate' | 'recreate' | 'blueGreen';
+		devices?: Record<string, number>;
 		imagePullPolicy?: 'Always' | 'IfNotPresent' | null;
 		effectiveImagePullPolicy?: 'Always' | 'IfNotPresent';
 		warnings?: Array<{ podName: string; message: string; timestamp: string }>;
@@ -722,13 +723,15 @@
 	// Recreate; the picker disables RollingUpdate in that case.
 	let strategyValue = $state<'rollingUpdate' | 'recreate' | 'blueGreen'>('rollingUpdate');
 	let savingStrategy = $state(false);
-	const hasPvcVolume = $derived(volumes.some((v) => v.type === 'pvc'));
+	const hasPvcVolume = $derived(
+		volumes.some((v) => v.type === 'pvc') || Object.keys(deployment?.devices ?? {}).length > 0
+	);
 
 	async function saveStrategy(next: 'rollingUpdate' | 'recreate' | 'blueGreen') {
 		if (!deployment || savingStrategy || next === strategyValue) return;
 		if (hasPvcVolume && next !== 'recreate') {
 			toasts.add({
-				title: 'Apps with volumes must use Recreate',
+				title: 'Apps with volumes or devices must use Recreate',
 				color: 'warning'
 			});
 			return;
@@ -2276,6 +2279,7 @@
 	function handleDeploymentUpdated(updated: Deployment) {
 		if (deployment) mergeInto(deployment, updated);
 		else deployment = updated;
+		if (updated?.deployStrategy) strategyValue = updated.deployStrategy;
 	}
 
 	function handleSourceUpdated(updated: Deployment) {

@@ -517,6 +517,12 @@ Both off by default, and both need the runtime on every node first, or pods fail
 | `builderSandbox.scratch.size` / `storageClass` | `40Gi` / `""` | Size and class of the BuildKit scratch. The class only applies in block mode; empty uses the default StorageClass. With tmpfs, `size` is a RAM reservation. |
 | `builderSandbox.memoryLimit` | `""` | `BUILDER_MEMORY_LIMIT`. |
 
+### Devices (`devices.*`)
+
+| Key | Default | Description |
+|---|---|---|
+| `devices.classes` | `[]` | Extended resources apps may attach, as `DEVICE_CLASSES`. Each entry has `resource` (for example `nvidia.com/gpu`), `label`, an optional `runtimeClassName` (for example `nvidia`) and `max` per app (default 1). A device plugin on the node must advertise the resource. |
+
 ### Backup proxy (`r2Proxy.*`)
 
 | Key | Default | Description |

@@ -116,6 +116,7 @@ export const TOOL_CATALOG: Record<string, ToolSpec> = {
   update_deployment_image: t('deployments', 'update'),
   update_deployment_strategy: t('deployments', 'update'),
   update_deployment_pull_policy: t('deployments', 'update'),
+  update_deployment_devices: t('deployments', 'update'),
   update_deployment_build_config: t('deployments', 'update'),
   list_registry_credentials: t('deployments', 'read'),
   set_registry_credential: t('deployments', 'update', { openWorld: true }),

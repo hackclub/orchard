@@ -33,6 +33,12 @@ import {
 import { snapshotPublicPortState, publicPortKey } from '../kubernetes/port-utils';
 import { UNKNOWN_PUBLIC_ENDPOINT } from '../kubernetes/public-endpoint';
 import { resolvePullPolicy } from '../kubernetes/trusted-images';
+import {
+  deviceClasses,
+  storedDevices,
+  validateDeviceRequest,
+  type DeviceRequest
+} from '../kubernetes/devices';
 import { startArgsFor, resolveStartArgs } from '../kubernetes/start-command';
 import { disruptionBudgetActive } from '../kubernetes/disruption-budget';
 import { publicDeploymentPorts } from '../kubernetes/security-policies';
@@ -6267,6 +6273,11 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
         'This app has a volume, so it can only use Recreate. Remove the volume to use rolling updates or blue-green.'
       );
     }
+    if (Object.keys(storedDevices(deployment.devices)).length > 0 && strategy !== 'recreate') {
+      throw new BadRequestException(
+        'This app has a device attached, so it can only use Recreate. Detach the device to use rolling updates or blue-green.'
+      );
+    }
 
     await this.k8sWorkload.updateDeploymentStrategy(
       deployment.name,
@@ -6473,6 +6484,54 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       pullPolicy: [deployment.imagePullPolicy ?? null, policy]
     });
     return updatedPolicy;
+  }
+
+  private parseDevices(input: unknown, stored: DeviceRequest = {}): DeviceRequest {
+    try {
+      return validateDeviceRequest(input, deviceClasses(), stored);
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
+  }
+
+  async updateDeploymentDevices(deploymentId: string, input: unknown, userId?: string) {
+    const deployment = await this.prisma.deployment.findUnique({
+      where: { id: deploymentId }
+    });
+    if (!deployment) throw new NotFoundException('Deployment not found');
+    this.assertNotComposeManaged(deployment, 'Change attached devices');
+
+    if (userId) {
+      await this.authz.requireProjectEdit(deployment.projectId, userId, 'change attached devices');
+    }
+
+    const devices = this.parseDevices(input, storedDevices(deployment.devices));
+
+    const k8sExists = await this.k8sWorkload
+      .getKubernetesDeployment(deployment.name, deployment.namespace)
+      .then((d) => d !== null);
+    if (k8sExists) {
+      await this.k8sWorkload.updateDeploymentDevices(
+        deployment.name,
+        deployment.namespace,
+        devices
+      );
+    }
+
+    const pinStrategy = Object.keys(devices).length > 0 && deployment.deployStrategy !== 'recreate';
+    const updated = await this.prisma.deployment.update({
+      where: { id: deploymentId },
+      data: { devices, ...(pinStrategy ? { deployStrategy: 'recreate' as const } : {}) }
+    });
+    this.auditDeploymentChange(deployment, 'deployment.devices.updated', userId, {
+      devices: [storedDevices(deployment.devices), devices]
+    });
+    if (pinStrategy) {
+      this.auditDeploymentChange(deployment, 'deployment.strategy.updated', userId, {
+        strategy: [deployment.deployStrategy ?? null, 'recreate']
+      });
+    }
+    return updated;
   }
 
   async updateDeploymentImage(
@@ -6710,6 +6769,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       imagePullPolicy?: 'Always' | 'IfNotPresent';
       pdbMinAvailable?: number;
       createdByGraft?: string;
+      devices?: Record<string, number> | null;
       // Overrides the image's CMD. An image-source deployment never runs a
       // builder, so this is the only way to run `redis-server --appendonly
       // yes` instead of whatever the image starts with.
@@ -6875,9 +6935,9 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
     // PVC volumes force the Recreate update strategy on k8s; mirror that in
     // the DB so the UI shows the truth from the moment the deployment exists.
     const hasPvcOnCreate = (volumes ?? []).some((v) => v.type === 'pvc');
-    const initialStrategy: 'rollingUpdate' | 'recreate' = hasPvcOnCreate
-      ? 'recreate'
-      : 'rollingUpdate';
+    const initialDevices = this.parseDevices(data.devices);
+    const initialStrategy: 'rollingUpdate' | 'recreate' =
+      hasPvcOnCreate || Object.keys(initialDevices).length > 0 ? 'recreate' : 'rollingUpdate';
     // Stored as given: null keeps it automatic and re-derives if the image
     // later changes; a value here is the caller pinning it.
     const pullPolicyOverride =
@@ -6913,6 +6973,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
       imagePullPolicy: resolvePullPolicy(pullPolicyOverride, image),
       imagePullSecrets: await this.registryCredentials.pullSecretsFor(project.id, image),
       pdbMinAvailable: initialPdbMinAvailable,
+      devices: initialDevices,
       args: startArgs
     });
 
@@ -6936,6 +6997,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
             deployStrategy: initialStrategy,
             imagePullPolicy: pullPolicyOverride,
             pdbMinAvailable: initialPdbMinAvailable,
+            devices: initialDevices,
             startCommand,
             nodePoolId: data.nodePoolId ?? null,
             placementOverride: (placementOverride ?? undefined) as
@@ -8592,6 +8654,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
             deployStrategy: true,
             imagePullPolicy: true,
             pdbMinAvailable: true,
+            devices: true,
             nodePoolId: true,
             placementOverride: true,
             project: { select: { organizationId: true, ownerId: true } }
@@ -8697,6 +8760,7 @@ export class DeploymentsService implements OnModuleInit, OnModuleDestroy {
             deployStrategy: buildStrategy,
             imagePullPolicy: buildPullPolicy,
             pdbMinAvailable: deploymentRow?.pdbMinAvailable ?? 1,
+            devices: storedDevices(deploymentRow?.devices),
             healthCheck
           });
         } else {

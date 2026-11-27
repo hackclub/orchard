@@ -1,5 +1,6 @@
 import type * as k8s from '@kubernetes/client-node';
-import { hardenedSecurityContext, tenantRuntimeClassName } from './trusted-images';
+import { hardenedSecurityContext } from './trusted-images';
+import { deviceRuntimeClassName, holdsDevices, liveDeviceQuantities } from './devices';
 
 export const ROLLOUT_MIN_READY_SECONDS = 10;
 
@@ -201,7 +202,11 @@ export function buildGreenDeployment(
       else delete containers[0].args;
     }
   }
-  if (template.spec) template.spec.runtimeClassName = tenantRuntimeClassName();
+  if (template.spec) {
+    template.spec.runtimeClassName = deviceRuntimeClassName(
+      Object.keys(liveDeviceQuantities(containers[0]?.resources))
+    );
+  }
   spec.template = template;
   clone.spec = spec;
   return clone;
@@ -211,6 +216,9 @@ export function blueGreenBlocker(blue: k8s.V1Deployment): string | null {
   const volumes = blue.spec?.template?.spec?.volumes ?? [];
   if (volumes.some((v) => v.persistentVolumeClaim?.claimName)) {
     return "blue/green can't run two copies of a ReadWriteOnce volume";
+  }
+  if ((blue.spec?.template?.spec?.containers ?? []).some((c) => holdsDevices(c.resources))) {
+    return "blue/green can't run a second copy of an app that holds a device. Switch it to Recreate";
   }
   return null;
 }

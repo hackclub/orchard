@@ -194,6 +194,7 @@ export interface CreateDeploymentOptions {
   // budget is skipped entirely unless `replicas` exceeds it: see
   // K8sWorkloadService.applyPodDisruptionBudget.
   pdbMinAvailable?: number;
+  devices?: Record<string, number>;
 }
 
 export interface UpdateDeploymentEnvOptions {

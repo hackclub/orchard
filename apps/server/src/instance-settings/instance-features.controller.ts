@@ -6,6 +6,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { FirecrackerClient } from '../docker/fc/fc-client';
 import { storageFeatures } from '../instance-config/object-storage';
 import { EmailService } from '../email/email.service';
+import { deviceClasses } from '../kubernetes/devices';
 
 @Controller('instance')
 export class InstanceFeaturesController {
@@ -29,7 +30,8 @@ export class InstanceFeaturesController {
       superBuilds: Boolean(process.env.DEPOT_TOKEN),
       storage: storageFeatures(),
       resourceLimits: (await this.settings.getResourceLimitsState()).value,
-      fastBuilderRouting: (await this.settings.getFastBuilderRoutingState()).value
+      fastBuilderRouting: (await this.settings.getFastBuilderRoutingState()).value,
+      devices: deviceClasses().map(({ resource, label, max }) => ({ resource, label, max }))
     };
   }
 }

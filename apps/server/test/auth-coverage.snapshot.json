@@ -450,6 +450,7 @@
   "PATCH /databases/:id/settings": "authenticated",
   "PATCH /databases/:id/storage": "authenticated",
   "PATCH /deployments/:deploymentId/services/:serviceId/exposure": "authenticated",
+  "PATCH /deployments/:id/devices": "authenticated",
   "PATCH /deployments/:id/disruption-budget": "authenticated",
   "PATCH /deployments/:id/image": "authenticated",
   "PATCH /deployments/:id/image-update": "authenticated",

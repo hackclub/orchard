@@ -323,6 +323,10 @@ const deploymentBase = z
       .boolean()
       .optional()
       .describe('Roll out new pushes of the image tag by themselves.'),
+    devices: z
+      .record(z.string(), z.number())
+      .optional()
+      .describe('Host devices attached to each pod, as extended resource name to count.'),
     githubRepo: z.string().nullable().optional(),
     githubBranch: z.string().nullable().optional(),
     dockerfilePath: z.string().nullable().optional(),
@@ -719,6 +723,12 @@ export const attachments: Record<`${string} /${string}`, RouteAttachment> = {
         .optional()
         .describe(
           "Runs instead of the image's CMD, like a command passed to docker run. Omit to keep the image's own."
+        ),
+      devices: z
+        .record(z.string(), z.number().int().min(0))
+        .nullish()
+        .describe(
+          'Host devices to attach, as extended resource name to count, for example {"nvidia.com/gpu": 1}. Only the devices the instance offers are accepted.'
         )
     }),
     response: deploymentWithRelations
@@ -842,6 +852,19 @@ export const attachments: Record<`${string} /${string}`, RouteAttachment> = {
         .describe('Roll out a new push of the same tag within a few hours of it landing.')
     }),
     response: imageUpdateStatus
+  },
+  'PATCH /deployments/:id/devices': {
+    summary: 'Attach or detach host devices such as GPUs',
+    scope: 'deploy',
+    request: z.object({
+      devices: z
+        .record(z.string(), z.number().int().min(0))
+        .nullable()
+        .describe(
+          'The full set to attach, as extended resource name to count. A count of 0 or a missing name detaches it, and null detaches everything. Pods restart to pick it up.'
+        )
+    }),
+    response: deploymentBase
   },
   'PATCH /deployments/:id/pull-policy': {
     summary: 'Pin or clear the image pull policy override',

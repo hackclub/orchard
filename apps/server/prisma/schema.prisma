@@ -758,6 +758,7 @@ model Deployment {
   // ({ nodeSelector?, tolerations?, affinity? } deep-merged over the resolved placement).
   nodePoolId           String?            @map("node_pool_id") @db.Uuid
   placementOverride    Json?              @map("placement_override") @db.JsonB
+  devices              Json               @default("{}") @db.JsonB
   buildStatus          String             @default("none") @map("build_status") @db.VarChar(50)
   buildStep            String?            @map("build_step") @db.VarChar(50)
   buildType            BuildType          @default(dockerfile) @map("build_type")

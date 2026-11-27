@@ -147,6 +147,7 @@ var routeCoverage = map[string]string{
 	"POST /deployments/:id/image-update/check":    "deploy image-update check",
 	"POST /deployments/:id/image-update":          "deploy image-update apply",
 	"PATCH /deployments/:id/image-update":         "deploy image-update auto",
+	"PATCH /deployments/:id/devices":              "deploy devices set",
 
 	// databases: post-mortem capture
 	"GET /databases/:id/killed-containers":               "db killed list",

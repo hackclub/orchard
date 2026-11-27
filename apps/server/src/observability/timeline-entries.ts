@@ -176,6 +176,7 @@ const AUDIT_TITLES: Record<string, string> = {
   'deployment.image_auto_update.disabled': 'Image auto-update disabled',
   'deployment.strategy.updated': 'Deploy strategy changed',
   'deployment.pull_policy.updated': 'Pull policy changed',
+  'deployment.devices.updated': 'Devices changed',
   'deployment.placement.updated': 'Placement changed',
   'deployment.disruption_budget.updated': 'Disruption budget changed',
   'deployment.volume.rejected': 'Volume rejected',

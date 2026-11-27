@@ -9,6 +9,8 @@
 {{- if .Values.tenant.certClusterIssuer }}{{- $issuers = append $issuers .Values.tenant.certClusterIssuer }}{{- end }}
 {{- range $ap.extraIssuers }}{{- $issuers = append $issuers . }}{{- end }}
 {{- $runtimeClass := "" }}
+{{- $deviceRuntimes := list }}
+{{- range .Values.devices.classes }}{{- if .runtimeClassName }}{{- $deviceRuntimes = append $deviceRuntimes (printf "%s=%s" .resource .runtimeClassName) }}{{- end }}{{- end }}
 {{- if and .Values.tenantSandbox.enabled .Values.tenantSandbox.runtimeClassName }}{{- $runtimeClass = .Values.tenantSandbox.runtimeClassName }}{{- end }}
 # Tenant-namespace admission guard. Policy bodies live in policies/orchard-tenant-policies.yaml (also what the
 # CEL test harness evaluates); this template adds the parameter ConfigMap and the bindings.
@@ -30,6 +32,7 @@ data:
   allowLoadBalancer: "true"
   runtimeClass: {{ $runtimeClass | quote }}
   databaseRuntimeClass: {{ .Values.databases.runtimeClassName | default "" | quote }}
+  deviceRuntimeClasses: {{ join "," $deviceRuntimes | quote }}
   protectionProxyIPs: {{ $ap.protectionProxyIPs | default $serverIp | quote }}
   tenantSecretsRole: "orchard-tenant-secrets"
   pgImagePrefixes: {{ join "," $ap.pgImagePrefixes | quote }}

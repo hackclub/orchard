@@ -4135,6 +4135,15 @@
     "bodyIds": [],
     "unseeded": []
   },
+  "PATCH /deployments/:id/devices": {
+    "class": "resource-scoped",
+    "auth": "authenticated",
+    "handler": "DeploymentsController.updateDeploymentDevices",
+    "params": ["id:deployment"],
+    "queryIds": [],
+    "bodyIds": [],
+    "unseeded": []
+  },
   "PATCH /deployments/:id/disruption-budget": {
     "class": "resource-scoped",
     "auth": "authenticated",

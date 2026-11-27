@@ -5,6 +5,7 @@
 	import { isDatabaseImage } from '$lib/presets';
 	import { apiFetch, instanceFeatures, isSuperAdmin } from '$lib/stores';
 	import NodePoolPicker from './NodePoolPicker.svelte';
+	import DevicesCard from './DevicesCard.svelte';
 
 	let {
 		deployment,
@@ -128,6 +129,11 @@
 	<NodePoolPicker
 		deploymentId={deployment.id}
 		nodePoolId={deployment.nodePoolId}
+		onSaved={onDeploymentUpdated}
+	/>
+	<DevicesCard
+		deploymentId={deployment.id}
+		devices={deployment.devices}
 		onSaved={onDeploymentUpdated}
 	/>
 {/if}

@@ -216,6 +216,7 @@ export interface Deployment {
 	totalMemoryUsage?: number | null;
 	deployStrategy?: 'rollingUpdate' | 'recreate' | 'blueGreen';
 	pdbMinAvailable?: number;
+	devices?: Record<string, number>;
 	imagePullPolicy?: 'Always' | 'IfNotPresent' | null;
 	effectiveImagePullPolicy?: 'Always' | 'IfNotPresent';
 	warnings?: { podName: string; message: string; timestamp: string }[];

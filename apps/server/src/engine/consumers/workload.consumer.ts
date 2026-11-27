@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
+import { liveDeviceQuantities, sameDevices, storedDevices } from '../../kubernetes/devices';
 import * as k8s from '@kubernetes/client-node';
 import { PrismaService } from '../../prisma/prisma.service';
 import { KubernetesService } from '../../kubernetes/kubernetes.service';
@@ -269,6 +270,7 @@ export class WorkloadConsumer implements OnModuleDestroy {
         memoryRequestBytes: true,
         deployStrategy: true,
         imagePullPolicy: true,
+        devices: true,
         buildStatus: true,
         name: true,
         envObservedHash: true
@@ -366,6 +368,17 @@ export class WorkloadConsumer implements OnModuleDestroy {
     ) {
       changes.imagePullPolicy = pullPolicy;
       adopted.push(`pullPolicy=${pullPolicy}`);
+    }
+
+    const appContainer = row.name
+      ? dep.spec?.template?.spec?.containers?.find((c) => c.name === row.name)
+      : undefined;
+    if (appContainer) {
+      const liveDevices = storedDevices(liveDeviceQuantities(appContainer.resources));
+      if (!sameDevices(liveDevices, storedDevices(row.devices))) {
+        changes.devices = liveDevices;
+        adopted.push(`devices=${JSON.stringify(liveDevices)}`);
+      }
     }
 
     await this.adoptEnv(deploymentId, row.name, row.envObservedHash, dep);

@@ -352,6 +352,7 @@ export default defineConfig({
               items: [
                 { label: 'Architecture', slug: 'operate/architecture' },
                 { label: 'Nodes and pools', slug: 'operate/nodes' },
+                { label: 'GPUs and devices', slug: 'operate/devices' },
                 { label: 'Upgrades', slug: 'operate/upgrades' },
                 { label: 'Free disk space', slug: 'operate/disk-space' },
                 { label: 'Scale the control plane', slug: 'operate/scale-control-plane' },

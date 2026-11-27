@@ -1,5 +1,6 @@
 import { cpuMilliToK8s, cpuRequestFromLimitMilli, memoryBytesToK8s } from './quantity';
 import { parsePgMemory } from './db-tuning';
+import { isDeviceResource, liveDeviceQuantities, withDevices } from './devices';
 
 const MiB = 1024 * 1024;
 
@@ -42,13 +43,23 @@ export function containerResourcesPatch(size: PodSizing) {
   return resources.limits ? resources : { ...resources, limits: null };
 }
 
+export function appResourcesPatch(size: PodSizing) {
+  const resources = containerResources(size);
+  return resources.limits ? resources : { ...resources, limits: { cpu: null, memory: null } };
+}
+
 export function noLimitsMetadataPatch(size: PodSizing) {
   return size.noLimits ? { metadata: { annotations: { [NO_LIMITS_ANNOTATION]: 'true' } } } : {};
 }
 
 export function applySizingTo(deployment: any, size: PodSizing): void {
   const container = deployment?.spec?.template?.spec?.containers?.[0];
-  if (container) container.resources = containerResources(size);
+  if (container) {
+    container.resources = withDevices(
+      containerResources(size),
+      liveDeviceQuantities(container.resources)
+    );
+  }
   if (size.noLimits && deployment?.metadata) {
     deployment.metadata.annotations = {
       ...(deployment.metadata.annotations ?? {}),
@@ -58,7 +69,7 @@ export function applySizingTo(deployment: any, size: PodSizing): void {
 }
 
 export function hasLimits(resources?: { limits?: Record<string, unknown> | null } | null): boolean {
-  return Object.keys(resources?.limits ?? {}).length > 0;
+  return Object.keys(resources?.limits ?? {}).some((key) => !isDeviceResource(key));
 }
 
 export function runsWithoutLimitsOnPurpose(
