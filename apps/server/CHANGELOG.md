@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.98.0](https://github.com/hackclub/orchard/compare/server/v2.97.1...server/v2.98.0) (2026-11-27)
+
+
+### Features
+
+* **grafts:** manage deployments and pod exec via projects door ([#32](https://github.com/hackclub/orchard/issues/32)) ([66f74ae](https://github.com/hackclub/orchard/commit/66f74ae1bf53c2f17e7dd68e795ffcec3d17e757))
+* **hostctl:** add orchardctl fast-builder ([3dba76d](https://github.com/hackclub/orchard/commit/3dba76dae35ae7bda94adc44b3dbfad80456fff8))
+* **server:** add fast builder routing setting ([590e13c](https://github.com/hackclub/orchard/commit/590e13c6656dc5c4aea306e33587687a5777023c))
+* **server:** attach gpus and host devices to apps ([#35](https://github.com/hackclub/orchard/issues/35)) ([acf186d](https://github.com/hackclub/orchard/commit/acf186d8de5312146dc0d359f7c6f66173f76e22))
+* **server:** follow image tags and auto-update apps ([a865b87](https://github.com/hackclub/orchard/commit/a865b87370d0ca698c9365bc2ee247da130bd974))
+* **server:** report failed database backups to datadog ([aeaa6c4](https://github.com/hackclub/orchard/commit/aeaa6c43619da4640ca199ac49ce96ef116d9b98))
+
+
+### Bug Fixes
+
+* **chart:** let cluster admins create load balancers ([9179233](https://github.com/hackclub/orchard/commit/9179233a6abb26b83db93b19c25966c636d558b2))
+* **hostctl:** size the fast builder to free memory ([9d58311](https://github.com/hackclub/orchard/commit/9d583114c96da8a822846199e2a8503ed27287c1))
+* **server:** allow upgrading guests to org members ([#30](https://github.com/hackclub/orchard/issues/30)) ([c87ab9a](https://github.com/hackclub/orchard/commit/c87ab9a77a4ffd475cf428acd6eb8f624d1b3ffe))
+* **server:** back off failed image pulls ([cdbeda1](https://github.com/hackclub/orchard/commit/cdbeda1ac059f98b1dd458c7725969de750d4e5b))
+* **server:** cap image check errors at 100 chars ([987f2dc](https://github.com/hackclub/orchard/commit/987f2dc9ef47f0307604ee111203f6717e75ab03))
+* **server:** clear restart error once pods catch up ([bfd09cc](https://github.com/hackclub/orchard/commit/bfd09cc2f4e91711c62b56ed6ce43cd1106678a7))
+* **server:** hand rootless builds their cache dir ([#28](https://github.com/hackclub/orchard/issues/28)) ([ac27c71](https://github.com/hackclub/orchard/commit/ac27c71daedf9018b88ac5643f87e5cf80313c71))
+* **server:** hold failed image pulls until tag moves ([6b6ed65](https://github.com/hackclub/orchard/commit/6b6ed65981ac4e3d3dd281e393cdc2eb332f4745))
+* **server:** keep shared lb ips open to every holder ([d703343](https://github.com/hackclub/orchard/commit/d70334320e6d8072d4ba61250451a2f76a2d6809))
+* **server:** push oci layout instead of tarball ([#29](https://github.com/hackclub/orchard/issues/29)) ([cf422b3](https://github.com/hackclub/orchard/commit/cf422b3c4790a85bc3cd4b449ecfb60d44b45ef4))
+* **server:** recheck an app after a failed pull ([5b51935](https://github.com/hackclub/orchard/commit/5b5193530c4960f29613af1239a9789ac0853840))
+* **server:** record image pulls before restarting ([8933fb3](https://github.com/hackclub/orchard/commit/8933fb3fbd00e6d39b595c16280a35c0df3427db))
+* **server:** retry failed image pulls on next sweep ([f5320a5](https://github.com/hackclub/orchard/commit/f5320a531b9c2cd5192c11a4b050f21b3375aa9e))
+* **server:** stop status page crowds draining the db ([#37](https://github.com/hackclub/orchard/issues/37)) ([7db5a86](https://github.com/hackclub/orchard/commit/7db5a86500e6cee2bc519ceffb499f578c421e0d))
+
 ## [2.97.1](https://github.com/hackclub/orchard/compare/server/v2.97.0...server/v2.97.1) (2026-11-24)
 
 

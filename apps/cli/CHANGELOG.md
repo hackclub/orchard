@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.45.0](https://github.com/hackclub/orchard/compare/cli/v0.44.0...cli/v0.45.0) (2026-11-27)
+
+
+### Features
+
+* **cli:** add deploy image-update commands ([473c250](https://github.com/hackclub/orchard/commit/473c250503464b1a9ca54a019858162ae12a34d2))
+* **server:** attach gpus and host devices to apps ([#35](https://github.com/hackclub/orchard/issues/35)) ([acf186d](https://github.com/hackclub/orchard/commit/acf186d8de5312146dc0d359f7c6f66173f76e22))
+
 ## [0.44.0](https://github.com/hackclub/orchard/compare/cli/v0.43.0...cli/v0.44.0) (2026-11-23)
 
 
