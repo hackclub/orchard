@@ -309,6 +309,7 @@ export interface MockSsoProvider {
 
 export interface MockState {
 	resourceLimits?: 'on' | 'off';
+	fastBuilderRouting?: 'all' | 'per_app' | 'off' | 'flag';
 	signedIn: boolean;
 	meId: string;
 	users: MockUser[];

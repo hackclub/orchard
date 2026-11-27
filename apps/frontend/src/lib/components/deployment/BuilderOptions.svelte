@@ -29,6 +29,15 @@
 		{ value: 'kubernetes', label: 'Off' }
 	];
 
+	const AUTO_HINTS = {
+		all: 'Auto uses the fast builder',
+		per_app: 'Auto uses the standard builder',
+		off: 'Turned off for this server, so every build uses the standard builder',
+		flag: 'Auto lets Orchard decide'
+	} as const;
+
+	const autoHint = $derived(AUTO_HINTS[$instanceFeatures.fastBuilderRouting] ?? AUTO_HINTS.flag);
+
 	if (browser) instanceFeatures.load().catch(() => undefined);
 
 	let queue: Promise<void> = Promise.resolve();
@@ -67,7 +76,7 @@
 			{/if}
 		{/if}
 		{#if $instanceFeatures.fastBuilder}
-			<SettingRow label="Fast builder" hint="Auto lets Orchard decide">
+			<SettingRow label="Fast builder" hint={autoHint}>
 				<SegmentedControl
 					label="Fast builder"
 					options={BUILDERS}

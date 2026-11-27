@@ -185,6 +185,7 @@ export function shellRoutes(r: Router, { store, hub, log }: MockContext) {
 		email: true,
 		superBuilds: true,
 		resourceLimits: store.state.resourceLimits ?? 'on',
+		fastBuilderRouting: store.state.fastBuilderRouting ?? 'flag',
 		grafts: [],
 		storage: storageFeatures
 	}));

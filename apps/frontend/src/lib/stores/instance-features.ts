@@ -10,6 +10,7 @@ export interface InstanceFeatures {
 	email: boolean;
 	superBuilds: boolean;
 	resourceLimits: 'on' | 'off';
+	fastBuilderRouting: 'all' | 'per_app' | 'off' | 'flag';
 	storage: {
 		s3: boolean;
 		backups: 'external' | 'local' | 'none';
@@ -33,6 +34,7 @@ const features = writable<InstanceFeatures>({
 	email: true,
 	superBuilds: false,
 	resourceLimits: 'on',
+	fastBuilderRouting: 'flag',
 	storage: STORAGE_DEFAULT
 });
 let loaded = false;
@@ -52,6 +54,7 @@ export const instanceFeatures = {
 			email: true,
 			superBuilds: false,
 			resourceLimits: 'on' as const,
+			fastBuilderRouting: 'flag' as const,
 			storage: STORAGE_DEFAULT,
 			...((await response.json()) as Partial<InstanceFeatures>)
 		};

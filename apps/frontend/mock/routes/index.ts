@@ -5,6 +5,7 @@ import { adminPeopleRoutes } from './admin-people.ts';
 import { adminSystemRoutes } from './admin-system.ts';
 import { databaseRoutes } from './databases.ts';
 import { deploymentRoutes } from './deployments.ts';
+import { fastBuilderRoutes } from './fast-builder.ts';
 import { gitRoutes } from './git.ts';
 import { podFileRoutes } from './pod-files.ts';
 import { jobRoutes } from './jobs.ts';
@@ -28,6 +29,7 @@ export function registerRoutes(router: Router, ctx: MockContext) {
 	jobRoutes(router, ctx);
 	securityRoutes(router, ctx);
 	settingsRoutes(router, ctx);
+	fastBuilderRoutes(router, ctx);
 	gitRoutes(router, ctx);
 	adminPeopleRoutes(router, ctx);
 }

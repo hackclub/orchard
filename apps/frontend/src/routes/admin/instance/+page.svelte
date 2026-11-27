@@ -25,6 +25,7 @@
 	import NewOrgDefaults from '$lib/components/admin/NewOrgDefaults.svelte';
 	import DatabaseSettings from '$lib/components/admin/DatabaseSettings.svelte';
 	import ImageScanning from '$lib/components/admin/ImageScanning.svelte';
+	import FastBuilderSetting from '$lib/components/admin/FastBuilderSetting.svelte';
 	import TelemetryToggle from '$lib/components/admin/TelemetryToggle.svelte';
 	import SettingCommand from '$lib/components/setup/SettingCommand.svelte';
 	import {
@@ -534,6 +535,7 @@
 			<NewOrgDefaults />
 			<McpToggle change={changes.mcp} />
 			<ImageScanning />
+			<FastBuilderSetting />
 			<DatabaseSettings />
 			<TelemetryToggle />
 		</Stack>
