@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.90.0](https://github.com/hackclub/orchard/compare/frontend/v1.89.0...frontend/v1.90.0) (2026-11-27)
+
+
+### Features
+
+* **frontend:** choose fast builder routing in admin ([d06e901](https://github.com/hackclub/orchard/commit/d06e901ffa322e777816c6fb2e01352d56833ed7))
+* **frontend:** set the app in allo ([276c3dc](https://github.com/hackclub/orchard/commit/276c3dc1b64ef0daadcc5a2ffa357afd308f8414))
+* **server:** attach gpus and host devices to apps ([#35](https://github.com/hackclub/orchard/issues/35)) ([acf186d](https://github.com/hackclub/orchard/commit/acf186d8de5312146dc0d359f7c6f66173f76e22))
+* **server:** follow image tags and auto-update apps ([a865b87](https://github.com/hackclub/orchard/commit/a865b87370d0ca698c9365bc2ee247da130bd974))
+
+
+### Bug Fixes
+
+* **frontend:** label the member access toggle ([#34](https://github.com/hackclub/orchard/issues/34)) ([54f1c7b](https://github.com/hackclub/orchard/commit/54f1c7bf4f764137a23a89e56b02e8c3a31dc7ae))
+* **server:** allow upgrading guests to org members ([#30](https://github.com/hackclub/orchard/issues/30)) ([c87ab9a](https://github.com/hackclub/orchard/commit/c87ab9a77a4ffd475cf428acd6eb8f624d1b3ffe))
+* **server:** hold failed image pulls until tag moves ([6b6ed65](https://github.com/hackclub/orchard/commit/6b6ed65981ac4e3d3dd281e393cdc2eb332f4745))
+* **server:** record image pulls before restarting ([8933fb3](https://github.com/hackclub/orchard/commit/8933fb3fbd00e6d39b595c16280a35c0df3427db))
+* **server:** stop status page crowds draining the db ([#37](https://github.com/hackclub/orchard/issues/37)) ([7db5a86](https://github.com/hackclub/orchard/commit/7db5a86500e6cee2bc519ceffb499f578c421e0d))
+
 ## [1.89.0](https://github.com/hackclub/orchard/compare/frontend/v1.88.0...frontend/v1.89.0) (2026-11-23)
 
 

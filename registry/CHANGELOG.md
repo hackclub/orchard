@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/hackclub/orchard/compare/templates/v0.7.0...templates/v0.7.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **templates:** pin image versions instead of latest ([d5d781e](https://github.com/hackclub/orchard/commit/d5d781e611c8cffd5fd95c4e6221f563597907ad))
+
 ## [0.7.0](https://github.com/hackclub/orchard/compare/templates/v0.6.1...templates/v0.7.0) (2026-11-23)
 
 

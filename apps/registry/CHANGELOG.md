@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.3](https://github.com/hackclub/orchard/compare/registry/v0.8.2...registry/v0.8.3) (2026-11-27)
+
+
+### Bug Fixes
+
+* **templates:** pin image versions instead of latest ([d5d781e](https://github.com/hackclub/orchard/commit/d5d781e611c8cffd5fd95c4e6221f563597907ad))
+
 ## [0.8.2](https://github.com/hackclub/orchard/compare/registry/v0.8.1...registry/v0.8.2) (2026-11-17)
 
 
