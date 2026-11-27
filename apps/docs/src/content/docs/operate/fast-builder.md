@@ -12,7 +12,7 @@ The fast builder is experimental. If no fast builder host can take a build when 
 - A Linux server with KVM. The file `/dev/kvm` must exist. Bare metal has it. On a cloud VM, the provider must offer nested virtualization, and it must be turned on.
 - cgroup v2. Current distributions use it by default.
 - An x86_64 or arm64 CPU.
-- At least 6 GB of memory. 16 GB or more lets several apps build at the same time.
+- At least 8 GB of memory. Orchard itself uses about 2.5 GB, and one VM needs about 4.5 GB free. 16 GB or more lets several apps build at the same time.
 
 The installer tells you when the server has KVM. To check yourself, run `ls -l /dev/kvm`.
 
@@ -41,18 +41,20 @@ To see what is set and whether the fast builder is running, run `sudo orchardctl
 
 `enable` chooses each value from the server. You do not have to change any of them.
 
-| Setting                    | Default                                                                 | Flag                            |
-| -------------------------- | ----------------------------------------------------------------------- | ------------------------------- |
-| CPUs for each VM           | Half of the server's CPUs, from 1 to 8                                  | `--vcpus`                       |
-| Memory for each VM         | A quarter of the server's memory, from 2 GiB to 16 GiB                  | `--memory`                      |
-| Memory kept free for apps  | 15% of the server's memory, from 2 GiB to 32 GiB                        | `--min-free`                    |
-| VMs at the same time       | As many as fit in the memory that is not kept free, from 1 to 6         | `--max-vms`                     |
-| Disk for all build caches  | 40% of the free disk, from 20 GiB to 1 TiB                              | `--storage-size`                |
-| Cache for each app         | A quarter of the disk above, from 10 GB to 50 GB                        | `--cache-size`                  |
-| StorageClass for that disk | The one the standard build cache uses (`local-path` on installer hosts) | `--storage-class`               |
-| Resource limits            | None. The fast builder asks for 0.25 CPU and 256 MiB, and has no limit. | `--cpu-limit`, `--memory-limit` |
+| Setting                    | Default                                                                                         | Flag                            |
+| -------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------- |
+| CPUs for each VM           | Half of the server's CPUs, from 1 to 8                                                          | `--vcpus`                       |
+| Memory for each VM         | A quarter of the server's memory, but no more than the free memory allows, from 2 GiB to 16 GiB | `--memory`                      |
+| Memory kept free for apps  | 15% of the server's memory, from 1 GiB to 32 GiB                                                | `--min-free`                    |
+| VMs at the same time       | As many as fit in the free memory, after the memory kept free, from 1 to 6                      | `--max-vms`                     |
+| Disk for all build caches  | 40% of the free disk, from 20 GiB to 1 TiB                                                      | `--storage-size`                |
+| Cache for each app         | A quarter of the disk above, from 10 GB to 50 GB                                                | `--cache-size`                  |
+| StorageClass for that disk | The one the standard build cache uses (`local-path` on installer hosts)                         | `--storage-class`               |
+| Resource limits            | None. The fast builder asks for 0.25 CPU and 256 MiB, and has no limit.                         | `--cpu-limit`, `--memory-limit` |
 
 Each VM also uses about 1.5 GiB more than its memory setting, for Firecracker and the cache disk.
+
+Free memory is the memory that Orchard and your apps are not using when you run `enable`. If `enable` cannot fit one VM in it, it stops and tells you how much memory it needs. If your apps use more memory later, fewer VMs can start. `sudo orchardctl fast-builder status` shows whether a new VM can start now.
 
 Without limits, the fast builder still cannot use up the server:
 
@@ -148,6 +150,6 @@ kubectl label node <node> orchard-fc-builder=true
 
 **Builds still use the standard builder.** Check the routing in **Instance admin** > **Configuration** > **Fast builder**, and the app's own setting. If the build log says "The fast builder is unavailable right now", no fast builder host took the build: check that the fast builder pod is ready, and read its log.
 
-**The fast builder log says "node memory low ... refusing new VMs".** Starting another VM would leave less free memory than `fcBuilder.vm.minNodeFreeMiB`, so builds that cannot use a running VM go to the standard builder. To run more VMs at once, lower `--memory`, or lower `--min-free` if your apps can spare the memory.
+**`status` says "new VM right now: no", or the fast builder log says "node memory low ... refusing new VMs".** Starting another VM would leave less free memory than `fcBuilder.vm.minNodeFreeMiB`, so builds that cannot use a running VM go to the standard builder. Run `enable` again to size the fast builder to the memory that is free now, or lower `--memory`, or lower `--min-free` if your apps can spare the memory.
 
 **Pushes fail.** Check `fcBuilder.registry.upstream` and `fcBuilder.registryEgress`. They must name the registry that your standard builds push to. Run `sudo kubectl -n orchard-fc-builders logs statefulset/fc-builder --tail=50` to see the error.
