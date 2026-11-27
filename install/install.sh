@@ -786,7 +786,7 @@ preflight() {
   fi
 
   if [ -w /dev/kvm ]; then
-    info "KVM present (VM-isolated builds available as an opt-in later)"
+    info "KVM present: after install, 'orchardctl fast-builder enable --apply' turns on the fast builder"
   fi
 
   local lo=${NODE_PORT_RANGE%-*} hi=${NODE_PORT_RANGE#*-}
