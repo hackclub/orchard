@@ -229,7 +229,11 @@ func applyFirstRound(values *cli.Values, facts hostFacts) []string {
 }
 
 func memoryMB() int {
-	raw, err := os.ReadFile("/proc/meminfo")
+	return memTotalMiB("/proc/meminfo")
+}
+
+func memTotalMiB(path string) int {
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return 0
 	}

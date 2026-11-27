@@ -54,6 +54,7 @@ func All() []*cli.Command {
 		Registry(),
 		Policies(),
 		Mcp(),
+		FastBuilder(),
 		Graft(),
 		PublicIP(),
 		Hostname(),
