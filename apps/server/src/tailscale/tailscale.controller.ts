@@ -64,7 +64,7 @@ export class TailscaleController {
   }
 
   @Post('link')
-  async linkAccount(@Req() req: any, @Body() body: { apiKey: string }) {
+  async linkAccount(@Req() req: any, @Body() body: { apiKey: string; loginServer?: string }) {
     if (!body.apiKey || typeof body.apiKey !== 'string') {
       throw new Error('API key is required');
     }
@@ -72,7 +72,7 @@ export class TailscaleController {
       email: req.user.email
     });
     await this.requireTailscaleFeature(user.id);
-    return this.tailscaleService.linkAccount(user.id, body.apiKey.trim());
+    return this.tailscaleService.linkAccount(user.id, body.apiKey.trim(), body.loginServer);
   }
 
   @Delete('unlink')

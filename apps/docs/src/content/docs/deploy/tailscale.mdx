@@ -47,6 +47,46 @@ The command prompts for the key. You can also set `ORCHARD_TS_AUTHKEY` or pass `
 
 Orchard encrypts the key before it stores it.
 
+## Use a self-hosted control server
+
+To join a tailnet that a self-hosted control server runs, such as [Headscale](https://headscale.net/), give Orchard the server's URL when you link. The proxy pod then registers with that server and not with Tailscale.
+
+1. On the control server, create a reusable pre-auth key. With Headscale, run:
+
+   ```sh
+   headscale preauthkeys create --user <user> --reusable --ephemeral --expiration 90d
+   ```
+
+2. Link with the key and the server's base URL.
+
+<Tabs syncKey="interface">
+<TabItem label="Dashboard">
+
+1. Go to **Account settings** > **Connections**.
+2. In **Tailscale**, select **Connect**.
+3. Paste the pre-auth key in **Auth key**.
+4. Enter the server's URL in **Login server**, such as `https://headscale.example.com`, and select **Connect**.
+
+</TabItem>
+<TabItem label="CLI">
+
+```sh
+orchard tailscale link --login-server https://headscale.example.com
+```
+
+The command prompts for the key. You can also set `ORCHARD_TS_LOGIN_SERVER`.
+
+</TabItem>
+</Tabs>
+
+The login server must be the base URL of the server, with `https://` or `http://` and no path. Orchard keeps the key format check for Tailscale keys only, so a key from your own server can have any format.
+
+:::note
+The proxy pod reaches the control server from inside the cluster, so the server needs a public address. Orchard blocks proxy traffic to private, link-local and CGNAT ranges, and to any port in `TENANT_EGRESS_BLOCK_PORTS`.
+:::
+
+To go back to Tailscale, link again with a Tailscale auth key and leave the login server empty. Apps already on a tailnet keep the server they joined with until you turn their **Tailscale** switch off and on.
+
 ## Put an app on your tailnet
 
 <Tabs syncKey="interface">
@@ -73,6 +113,8 @@ The device name on your tailnet is `<app>-<namespace>`. With [MagicDNS](https://
 ```text
 <app>-<namespace>.<tailnet>.ts.net
 ```
+
+On a self-hosted control server, the address ends in that server's own MagicDNS domain.
 
 Tailscale access controls apply to this device in the same way as to any other device on your tailnet.
 

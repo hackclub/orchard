@@ -23,6 +23,7 @@ func tailscaleTestRoot(t *testing.T, srvURL string) *cobra.Command {
 	t.Setenv("ORCHARD_PROJECT", "")
 	t.Setenv("ORCHARD_ENV", "")
 	t.Setenv("ORCHARD_TS_AUTHKEY", "")
+	t.Setenv("ORCHARD_TS_LOGIN_SERVER", "")
 	root := rootCmd()
 	tailscaleTestRegister(root, tailscaleCmd())
 	return root
@@ -84,6 +85,64 @@ func TestTailscaleLinkFlagBody(t *testing.T) {
 	}
 	if gotBody["apiKey"] != "tskey-auth-abc" {
 		t.Errorf("apiKey = %v, want tskey-auth-abc", gotBody["apiKey"])
+	}
+}
+
+func TestTailscaleLinkOmitsLoginServerByDefault(t *testing.T) {
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotBody = tailscaleDecodeBody(t, r)
+		io.WriteString(w, `{"tailnet":"k1"}`)
+	}))
+	defer srv.Close()
+
+	root := tailscaleTestRoot(t, srv.URL)
+	root.SetArgs([]string{"tailscale", "link", "--auth-key", "tskey-auth-abc"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("tailscale link: %v", err)
+	}
+	if _, ok := gotBody["loginServer"]; ok {
+		t.Errorf("loginServer sent without --login-server: %v", gotBody["loginServer"])
+	}
+}
+
+func TestTailscaleLinkLoginServerFlag(t *testing.T) {
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotBody = tailscaleDecodeBody(t, r)
+		io.WriteString(w, `{"tailnet":"headscale.example.com","loginServer":"https://headscale.example.com"}`)
+	}))
+	defer srv.Close()
+
+	root := tailscaleTestRoot(t, srv.URL)
+	root.SetArgs([]string{"tailscale", "link", "--auth-key", "0123abcd", "--login-server", " https://headscale.example.com "})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("tailscale link: %v", err)
+	}
+	if gotBody["apiKey"] != "0123abcd" {
+		t.Errorf("apiKey = %v, want 0123abcd", gotBody["apiKey"])
+	}
+	if gotBody["loginServer"] != "https://headscale.example.com" {
+		t.Errorf("loginServer = %v, want https://headscale.example.com", gotBody["loginServer"])
+	}
+}
+
+func TestTailscaleLinkLoginServerEnvFallback(t *testing.T) {
+	var gotBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotBody = tailscaleDecodeBody(t, r)
+		io.WriteString(w, `{"tailnet":"headscale.example.com"}`)
+	}))
+	defer srv.Close()
+
+	root := tailscaleTestRoot(t, srv.URL)
+	t.Setenv("ORCHARD_TS_LOGIN_SERVER", "https://headscale.example.com")
+	root.SetArgs([]string{"tailscale", "link", "--auth-key", "0123abcd"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("tailscale link: %v", err)
+	}
+	if gotBody["loginServer"] != "https://headscale.example.com" {
+		t.Errorf("loginServer = %v, want https://headscale.example.com", gotBody["loginServer"])
 	}
 }
 

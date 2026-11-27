@@ -51,6 +51,7 @@ Other env vars:
 | `ORCHARD_ENV`             | default environment scope (id or name)                                                              |
 | `ORCHARD_IDEMPOTENCY_KEY` | `Idempotency-Key` to send instead of a fresh one per mutation (see Retrying mutations safely)       |
 | `ORCHARD_TS_AUTHKEY`      | Tailscale auth key for `orchard tailscale link`, instead of `--auth-key` or stdin                   |
+| `ORCHARD_TS_LOGIN_SERVER` | self-hosted control server URL for `orchard tailscale link`, instead of `--login-server`            |
 | `ORCHARD_INGRESS_CNAME`   | CNAME target the CLI and TUI show for custom domains                                                |
 | `ORCHARD_SPEC_CACHE_DIR`  | directory for the cached `agent-spec.json` (default `~/.orchard`)                                   |
 
