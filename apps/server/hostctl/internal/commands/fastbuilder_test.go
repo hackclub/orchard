@@ -22,12 +22,22 @@ func TestSizeFastBuilder(t *testing.T) {
 		{
 			name:  "8 GiB, 4 cores",
 			facts: fcFacts{MemoryMiB: 8192, Cores: 4, FreeDiskGiB: 200},
-			want:  fcSizing{VCPUs: 2, MemoryMiB: 2048, MaxVMs: 1, MinFreeMiB: 2048, StorageGiB: 80, CacheGiB: 20},
+			want:  fcSizing{VCPUs: 2, MemoryMiB: 2048, MaxVMs: 1, MinFreeMiB: 1228, StorageGiB: 80, CacheGiB: 20},
 		},
 		{
 			name:  "a real 8 GB box reports less than 8 GiB",
 			facts: fcFacts{MemoryMiB: 7800, Cores: 4, FreeDiskGiB: 60},
-			want:  fcSizing{VCPUs: 2, MemoryMiB: 2048, MaxVMs: 1, MinFreeMiB: 2048, StorageGiB: 24, CacheGiB: 10},
+			want:  fcSizing{VCPUs: 2, MemoryMiB: 2048, MaxVMs: 1, MinFreeMiB: 1170, StorageGiB: 24, CacheGiB: 10},
+		},
+		{
+			name:  "an 8 GB box where Orchard already uses 2.5 GiB still boots a VM",
+			facts: fcFacts{MemoryMiB: 7751, AvailableMiB: 5235, Cores: 4, FreeDiskGiB: 40},
+			want:  fcSizing{VCPUs: 2, MemoryMiB: 2048, MaxVMs: 1, MinFreeMiB: 1162, StorageGiB: 20, CacheGiB: 10},
+		},
+		{
+			name:  "VM count comes from free memory, not total",
+			facts: fcFacts{MemoryMiB: 65536, AvailableMiB: 30000, Cores: 32, FreeDiskGiB: 1000},
+			want:  fcSizing{VCPUs: 8, MemoryMiB: 16384, MaxVMs: 1, MinFreeMiB: 9830, StorageGiB: 400, CacheGiB: 50},
 		},
 		{
 			name:  "16 GiB, 8 cores",
@@ -47,7 +57,7 @@ func TestSizeFastBuilder(t *testing.T) {
 		{
 			name:  "one core still gets a vCPU and a tiny disk gets the minimum",
 			facts: fcFacts{MemoryMiB: 8192, Cores: 1, FreeDiskGiB: 10},
-			want:  fcSizing{VCPUs: 1, MemoryMiB: 2048, MaxVMs: 1, MinFreeMiB: 2048, StorageGiB: 20, CacheGiB: 10},
+			want:  fcSizing{VCPUs: 1, MemoryMiB: 2048, MaxVMs: 1, MinFreeMiB: 1228, StorageGiB: 20, CacheGiB: 10},
 		},
 		{
 			name:  "flags win over the machine",
@@ -82,19 +92,22 @@ func TestSizeFastBuilder(t *testing.T) {
 }
 
 func TestSizeFastBuilderRefusesAMachineTooSmallForOneVM(t *testing.T) {
-	cases := map[string]fcSizing{
-		"defaults":          {},
-		"only --memory":     {MemoryMiB: 1024},
-		"only --min-free":   {MinFreeMiB: 1024},
-		"overrides too big": {MemoryMiB: 2048, MinFreeMiB: 2048},
+	cases := map[string]struct {
+		facts fcFacts
+		over  fcSizing
+	}{
+		"defaults":          {fcFacts{MemoryMiB: 4096, Cores: 2, FreeDiskGiB: 100}, fcSizing{}},
+		"only --min-free":   {fcFacts{MemoryMiB: 4096, Cores: 2, FreeDiskGiB: 100}, fcSizing{MinFreeMiB: 1024}},
+		"overrides too big": {fcFacts{MemoryMiB: 4096, Cores: 2, FreeDiskGiB: 100}, fcSizing{MemoryMiB: 2048, MinFreeMiB: 2048}},
+		"a busy 16 GiB box": {fcFacts{MemoryMiB: 16384, AvailableMiB: 4096, Cores: 8, FreeDiskGiB: 100}, fcSizing{}},
 	}
-	for name, over := range cases {
+	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			_, err := sizeFastBuilder(fcFacts{MemoryMiB: 4096, Cores: 2, FreeDiskGiB: 100}, over)
+			_, err := sizeFastBuilder(tc.facts, tc.over)
 			if err == nil {
-				t.Fatal("one VM can't fit in 4 GiB with these sizes; this should refuse")
+				t.Fatal("one VM can't fit in the free memory with these sizes; this should refuse")
 			}
-			if !strings.Contains(err.Error(), "4096 MiB") || !strings.Contains(err.Error(), "needs at least") {
+			if !strings.Contains(err.Error(), "4096 MiB of memory free") || !strings.Contains(err.Error(), "MiB free to start one VM") {
 				t.Fatalf("the refusal should say how much memory is needed, got %v", err)
 			}
 		})
@@ -456,4 +469,16 @@ func TestFastBuilderIsRegistered(t *testing.T) {
 		}
 	}
 	t.Fatal("fast-builder is not in the registry")
+}
+
+func TestVMRoomLine(t *testing.T) {
+	if got := vmRoomLine(5235, 2048, 2048); !strings.Contains(got, "no (5235 MiB free, a VM needs 5632 MiB)") {
+		t.Fatalf("the box this was found on should say no, got %q", got)
+	}
+	if got := vmRoomLine(5235, 2048, 1162); !strings.HasPrefix(got, "new VM right now: yes") {
+		t.Fatalf("after resizing it should say yes, got %q", got)
+	}
+	if got := vmRoomLine(0, 2048, 1162); got != "new VM right now: unknown" {
+		t.Fatalf("got %q", got)
+	}
 }

@@ -33,9 +33,10 @@ var fcEnableFlags = []string{
 }
 
 type fcFacts struct {
-	MemoryMiB   int
-	Cores       int
-	FreeDiskGiB int
+	MemoryMiB    int
+	AvailableMiB int
+	Cores        int
+	FreeDiskGiB  int
 }
 
 type fcSizing struct {
@@ -93,21 +94,26 @@ func orDefault(override, computed int) int {
 }
 
 func sizeFastBuilder(f fcFacts, o fcSizing) (fcSizing, error) {
+	available := f.AvailableMiB
+	if available <= 0 || available > f.MemoryMiB {
+		available = f.MemoryMiB
+	}
 	s := fcSizing{
 		VCPUs:      orDefault(o.VCPUs, clamp(f.Cores/2, 1, 8)),
-		MinFreeMiB: orDefault(o.MinFreeMiB, clamp(f.MemoryMiB*15/100, 2048, 32768)),
-		MemoryMiB:  orDefault(o.MemoryMiB, clamp(f.MemoryMiB/4/256*256, 2048, 16384)),
+		MinFreeMiB: orDefault(o.MinFreeMiB, clamp(f.MemoryMiB*15/100, 1024, 32768)),
 		StorageGiB: orDefault(o.StorageGiB, clamp(f.FreeDiskGiB*40/100, 20, 1024)),
 	}
+	budget := available - s.MinFreeMiB
+	s.MemoryMiB = orDefault(o.MemoryMiB, clamp(min(f.MemoryMiB/4, budget-fcVMOverheadMiB)/256*256, 2048, 16384))
 	s.CacheGiB = orDefault(o.CacheGiB, clamp(s.StorageGiB/4, 10, 50))
 	perVM := s.MemoryMiB + fcVMOverheadMiB
-	if need := s.MinFreeMiB + perVM; f.MemoryMiB < need {
-		return s, fmt.Errorf("this machine has %d MiB of memory, and the fast builder needs at least %d MiB for one VM: "+
+	if need := s.MinFreeMiB + perVM; available < need {
+		return s, fmt.Errorf("this machine has %d MiB of memory free right now (%d MiB in total), and the fast builder needs %d MiB free to start one VM: "+
 			"%d MiB kept free for apps, %d MiB for the VM and %d MiB for Firecracker and its cache disk. "+
-			"Add memory, or pass a smaller --memory and --min-free if your apps can spare it",
-			f.MemoryMiB, need, s.MinFreeMiB, s.MemoryMiB, fcVMOverheadMiB)
+			"Free some memory or add more, or pass a smaller --memory and --min-free if your apps can spare it",
+			available, f.MemoryMiB, need, s.MinFreeMiB, s.MemoryMiB, fcVMOverheadMiB)
 	}
-	s.MaxVMs = orDefault(o.MaxVMs, clamp((f.MemoryMiB-s.MinFreeMiB)/perVM, 1, 6))
+	s.MaxVMs = orDefault(o.MaxVMs, clamp(budget/perVM, 1, 6))
 	return s, nil
 }
 
@@ -236,8 +242,54 @@ func fastBuilderPreflight(h fcHost) error {
 	return nil
 }
 
+func meminfoMiB(path, key string) int {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return 0
+	}
+	for _, line := range strings.Split(string(raw), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 2 && fields[0] == key {
+			kb, _ := strconv.Atoi(fields[1])
+			return kb / 1024
+		}
+	}
+	return 0
+}
+
+func valueInt(v any) int {
+	switch n := v.(type) {
+	case int:
+		return n
+	case int64:
+		return int(n)
+	case float64:
+		return int(n)
+	case string:
+		i, _ := strconv.Atoi(n)
+		return i
+	}
+	return 0
+}
+
+func vmRoomLine(availableMiB, memoryMiB, minFreeMiB int) string {
+	if availableMiB <= 0 || memoryMiB <= 0 {
+		return "new VM right now: unknown"
+	}
+	need := memoryMiB + fcVMOverheadMiB + minFreeMiB
+	if availableMiB >= need {
+		return fmt.Sprintf("new VM right now: yes (%d MiB free, a VM needs %d MiB)", availableMiB, need)
+	}
+	return fmt.Sprintf("new VM right now: no (%d MiB free, a VM needs %d MiB), so builds that can't use a running VM go to the standard builder. "+
+		"Lower --memory or --min-free, or free some memory", availableMiB, need)
+}
+
 func readFastBuilderFacts(h fcHost) (fcFacts, string) {
-	facts := fcFacts{MemoryMiB: memTotalMiB(h.Meminfo), Cores: h.Cores()}
+	facts := fcFacts{
+		MemoryMiB:    memTotalMiB(h.Meminfo),
+		AvailableMiB: meminfoMiB(h.Meminfo, "MemAvailable:"),
+		Cores:        h.Cores(),
+	}
 	for _, dir := range h.StorageDirs {
 		if _, err := os.Stat(dir); err != nil {
 			continue
@@ -450,7 +502,7 @@ func printFastBuilderPlan(c *cli.Context, p fcPlan, facts fcFacts, diskDir strin
 		class = "the cluster's default StorageClass"
 	}
 	size := fmt.Sprintf("%dGi", s.StorageGiB)
-	c.Printf("fast builder on, sized for %d CPUs and %d MiB of memory:\n", facts.Cores, facts.MemoryMiB)
+	c.Printf("fast builder on, sized for %d CPUs and %d MiB of memory, %d MiB of it free now:\n", facts.Cores, facts.MemoryMiB, facts.AvailableMiB)
 	c.Printf("  up to %d VMs at once, each %d vCPUs and %d MiB\n", s.MaxVMs, s.VCPUs, s.MemoryMiB)
 	c.Printf("  %d MiB kept free for apps; no new VM starts below that\n", s.MinFreeMiB)
 	c.Printf("  %s for build caches on %s, up to %dG per app\n", size, class, s.CacheGiB)
@@ -567,6 +619,9 @@ func fastBuilderStatus(c *cli.Context, h fcHost) error {
 	} else {
 		c.Printf("\n/dev/kvm: usable\n")
 	}
+	if enabled {
+		c.Printf("%s\n", vmRoomLine(meminfoMiB(h.Meminfo, "MemAvailable:"), valueInt(values.Get("fcBuilder.vm.memoryMiB")), valueInt(values.Get("fcBuilder.vm.minNodeFreeMiB"))))
+	}
 
 	if out, err := h.Capture("kubectl", "-n", fastBuilderNamespace(values), "get", "pods"); err == nil && strings.TrimSpace(out) != "" {
 		c.Printf("\n%s", out)
@@ -599,9 +654,9 @@ already push to, and labels this node orchard-fc-builder=true so it runs here.
 Every size has a default from this machine and a flag to override it:
 
   --vcpus <n>             CPUs per VM           half the CPUs, 1 to 8
-  --memory <size>         memory per VM         a quarter of memory, 2Gi to 16Gi
-  --min-free <size>       memory kept for apps  15% of memory, 2Gi to 32Gi
-  --max-vms <n>           VMs at once           as many as fit, 1 to 6
+  --memory <size>         memory per VM         a quarter of memory if free, 2Gi to 16Gi
+  --min-free <size>       memory kept for apps  15% of memory, 1Gi to 32Gi
+  --max-vms <n>           VMs at once           as many as free memory fits, 1 to 6
   --storage-size <size>   disk for all caches   40% of free disk, 20Gi to 1Ti
   --cache-size <size>     cache per app         a quarter of that disk, 10G to 50G
   --storage-class <name>  StorageClass for it   builders.localCache.storageClass
