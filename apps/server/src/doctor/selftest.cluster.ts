@@ -10,6 +10,7 @@ import {
   tenantIngressPorts
 } from '../kubernetes/security-policies';
 import { hardenedSecurityContext } from '../kubernetes/trusted-images';
+import { podLogText } from '../kubernetes/pod-log-text';
 import { ABUSE_QUOTA_NAME, DENY_POLICY_NAME, ORG_QUOTA_NAME } from './doctor.checks';
 import { SELFTEST_LABEL } from './cluster-reader';
 import { errorMessage, isNotFound } from './doctor.types';
@@ -161,7 +162,7 @@ export class KubeSelfTestCluster implements SelfTestCluster {
 
   async podLog(namespace: string, name: string): Promise<string> {
     const { body } = await this.core.readNamespacedPodLog(name, namespace);
-    return typeof body === 'string' ? body : String(body ?? '');
+    return podLogText(body);
   }
 
   async deleteNamespace(name: string): Promise<void> {

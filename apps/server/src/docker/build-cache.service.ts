@@ -10,6 +10,7 @@ import * as k8s from '@kubernetes/client-node';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { KubernetesService } from '../kubernetes/kubernetes.service';
+import { podLogText } from '../kubernetes/pod-log-text';
 import { BUILDER_NAMESPACE } from './builder-namespace';
 import {
   BUILD_CACHE_SETTINGS_KEY,
@@ -220,12 +221,13 @@ export class BuildCacheService implements OnModuleInit, OnModuleDestroy {
       await core.createNamespacedPod(BUILDER_NAMESPACE, pod);
       const phase = await this.waitForPod(core, name, timeoutMs);
       const { body: log } = await core.readNamespacedPodLog(name, BUILDER_NAMESPACE, 'task');
+      const logText = podLogText(log);
       if (phase !== 'Succeeded') {
         throw new ServiceUnavailableException(
-          `The build cache task did not finish (${phase}). ${String(log).slice(-300)}`
+          `The build cache task did not finish (${phase}). ${logText.slice(-300)}`
         );
       }
-      return String(log);
+      return logText;
     } finally {
       this.busy = false;
       await core.deleteNamespacedPod(name, BUILDER_NAMESPACE).catch(() => {});

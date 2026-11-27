@@ -107,6 +107,7 @@ import { daemonTenantLabel, TENANT_KEY_LABEL } from './buildkit-daemon-policy';
 import { depotOutputFlags, depotScriptTail, depotSessionAuths } from './depot-session';
 import { BuildJobInformerService } from './build-job-informer.service';
 import { isUnseenTerminalSignal, remainingIntervalMs } from './build-poll-pacing';
+import { podLogText } from '../kubernetes/pod-log-text';
 import { platformRegistryApi } from './registry-api';
 import { deleteTags, platformImage } from './registry-prune.service';
 import {
@@ -2990,7 +2991,7 @@ fi
         // ever appears.
         400
       );
-      return typeof res.body === 'string' ? res.body : undefined;
+      return podLogText(res.body);
     } catch (error) {
       console.warn(
         `[ImageBuilder] Could not read railpack-prepare logs for ${podName}:`,
@@ -3263,7 +3264,7 @@ fi
                 undefined,
                 5000
               );
-              logs += logResponse.body ?? '';
+              logs += podLogText(logResponse.body);
 
               const hasPusherContainer = containerStatuses?.some((cs) => cs.name === 'pusher');
               if (hasPusherContainer && status !== 'pending') {
@@ -3280,8 +3281,9 @@ fi
                     undefined,
                     5000
                   );
-                  if (pusherLog.body && pusherLog.body.trim().length > 0) {
-                    pusherLogs = pusherLog.body;
+                  const pusherText = podLogText(pusherLog.body);
+                  if (pusherText.trim().length > 0) {
+                    pusherLogs = pusherText;
                   }
                 } catch (pusherLogError) {
                   console.warn(
@@ -3315,7 +3317,7 @@ fi
                         1000
                       );
                       allContainerLogs.push(
-                        `\n=== Init Container: ${ics.name} ===\n${initLogResponse.body ?? ''}`
+                        `\n=== Init Container: ${ics.name} ===\n${podLogText(initLogResponse.body)}`
                       );
                     } catch (initLogErr) {
                       console.warn(

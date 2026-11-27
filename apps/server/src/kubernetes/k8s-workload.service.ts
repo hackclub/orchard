@@ -6,6 +6,7 @@ import {
   NotFoundException
 } from '@nestjs/common';
 import { parseKubeletSummary, type VolumeUsage } from './volume-stats';
+import { podLogText } from './pod-log-text';
 import * as k8s from '@kubernetes/client-node';
 import * as https from 'https';
 import { isDeepStrictEqual } from 'node:util';
@@ -547,7 +548,7 @@ export class K8sWorkloadService {
       console.log('[API] Fetching logs for container:', targetContainer);
 
       try {
-        const logs = sinceTime
+        const rawLogs = sinceTime
           ? await this.readPodLogSinceTime(
               cleanPodName,
               cleanNamespace,
@@ -571,6 +572,7 @@ export class K8sWorkloadService {
                 true
               )
             ).body;
+        const logs = podLogText(rawLogs);
 
         return {
           podName: cleanPodName,

@@ -14,6 +14,7 @@ import {
   tenantRuntimeClassName
 } from '../kubernetes/trusted-images';
 import { containerResources, type PodSizing } from '../kubernetes/resource-spec';
+import { podLogText } from '../kubernetes/pod-log-text';
 import { QuotasService } from '../quotas/quotas.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NodesService } from '../nodes/nodes.service';
@@ -1142,7 +1143,7 @@ export class JobsOrchestratorService {
             undefined,
             MAX_LOG_BYTES
           );
-          const text = typeof res.body === 'string' ? res.body : String(res.body ?? '');
+          const text = podLogText(res.body);
           if (items.length > 1) {
             combined += `${combined ? '\n' : ''}--- attempt ${podName} ---\n${text}`;
           } else {
@@ -1197,7 +1198,7 @@ export class JobsOrchestratorService {
         undefined,
         MAX_LOG_BYTES
       );
-      return typeof res.body === 'string' ? res.body : String(res.body ?? '');
+      return podLogText(res.body);
     } catch {
       return null;
     }

@@ -22,6 +22,7 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { KubernetesService, ResolvedPlacement } from './kubernetes.service';
 import { parseMemory } from './quantity';
+import { podLogText } from './pod-log-text';
 import { containerResources, databaseSizing, type PodSizing } from './resource-spec';
 import { deriveDbTuning, walSlotKeepSize } from './db-tuning';
 import { appliedSharedBuffers, clusterRestartPatch, sharedBuffersStamp } from './cnpg-spec-sync';
@@ -2240,7 +2241,7 @@ export class K8sCnpgService implements OnApplicationBootstrap {
               undefined,
               500
             );
-            importLogs = typeof body === 'string' ? body : String(body ?? '');
+            importLogs = podLogText(body);
           } catch {
             /* ignore */
           }
@@ -2436,7 +2437,7 @@ export class K8sCnpgService implements OnApplicationBootstrap {
             undefined,
             40
           )
-          .then((res) => String(res.body ?? ''))
+          .then((res) => podLogText(res.body))
           .catch(() => '')
       )
     );
@@ -2459,7 +2460,7 @@ export class K8sCnpgService implements OnApplicationBootstrap {
       undefined,
       Math.max(1, Math.min(lines, 500))
     );
-    return typeof body === 'string' ? body : String(body ?? '');
+    return podLogText(body);
   }
 
   async namespaceMemoryHeadroom(namespace: string): Promise<number | null> {
