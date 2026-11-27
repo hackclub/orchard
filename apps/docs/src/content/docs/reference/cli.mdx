@@ -15,7 +15,7 @@ brew install --cask leafdtk/tap/orchard-cli
 ```
 
 Every command accepts `-o json` for machine-readable output, and `--org` / `--env` to
-override the saved context. **428 commands** are available.
+override the saved context. **433 commands** are available.
 
 ## alert
 
@@ -1693,6 +1693,46 @@ orchard deploy image set <id> <image>
 | --- | --- | --- | --- |
 | `--timeout` | duration | `10m0s` | give up waiting after this long (exit 8) |
 | `--wait` | bool | `false` | block until the operation reaches a terminal state |
+
+### `orchard deploy image-update`
+
+Follow an image tag and update the app when it moves
+
+```bash
+orchard deploy image-update
+```
+
+### `orchard deploy image-update apply`
+
+Restart the app onto the newest image for its tag
+
+```bash
+orchard deploy image-update apply <id>
+```
+
+### `orchard deploy image-update auto`
+
+Turn automatic updates on or off
+
+```bash
+orchard deploy image-update auto <id> on|off
+```
+
+### `orchard deploy image-update check`
+
+Ask the registry now instead of waiting for the next check
+
+```bash
+orchard deploy image-update check <id>
+```
+
+### `orchard deploy image-update status`
+
+Show whether a newer image is available
+
+```bash
+orchard deploy image-update status <id>
+```
 
 ### `orchard deploy killed`
 
