@@ -356,7 +356,8 @@ export default defineConfig({
                 { label: 'Free disk space', slug: 'operate/disk-space' },
                 { label: 'Scale the control plane', slug: 'operate/scale-control-plane' },
                 { label: 'Size older workloads', slug: 'operate/backfill' },
-                { label: 'Run Greenhouse', slug: 'operate/greenhouse' }
+                { label: 'Run Greenhouse', slug: 'operate/greenhouse' },
+                { label: 'Run the fast builder', slug: 'operate/fast-builder' }
               ]
             },
             {

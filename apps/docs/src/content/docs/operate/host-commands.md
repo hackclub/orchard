@@ -214,6 +214,17 @@ Turns the MCP endpoint on or off and sets its hostname. A new install has one at
 
 `disable` removes the deployment at the next upgrade. To stop the server from answering without a redeploy, use the toggle at **Instance admin** > **Configuration** > **Model Context Protocol**.
 
+## fast-builder
+
+```bash
+sudo orchardctl fast-builder status
+sudo orchardctl fast-builder enable --apply
+sudo orchardctl fast-builder enable --memory 8Gi --max-vms 2 --apply
+sudo orchardctl fast-builder disable --apply
+```
+
+Turns the [fast builder](/operate/fast-builder/) on or off. `enable` checks for KVM, sizes the fast builder to this server, points it at your registry, and labels this node for it. Each size has a flag. The [fast builder page](/operate/fast-builder/#default-sizes) lists the defaults, the flags, and the values that `enable` keeps. `disable` deletes the build caches at the next upgrade.
+
 ## graft
 
 ```bash
