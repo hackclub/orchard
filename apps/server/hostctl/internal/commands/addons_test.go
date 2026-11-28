@@ -183,7 +183,7 @@ func TestAnOperatorDoesNotCrossAMinorForASecurityFix(t *testing.T) {
 
 func TestTraefikUpgradeTurnsOffTheGatewayProvider(t *testing.T) {
 	args := strings.Join(addonUpgradeArgs(addons[0], "42.4.0"), " ")
-	if !strings.Contains(args, "--reuse-values") || !strings.Contains(args, "--set providers.kubernetesGateway.enabled=false") {
+	if !strings.Contains(args, "--reset-then-reuse-values") || !strings.Contains(args, "--set providers.kubernetesGateway.enabled=false") {
 		t.Errorf("got %s", args)
 	}
 	if strings.Contains(args, "--set-string providers.kubernetesGateway") {

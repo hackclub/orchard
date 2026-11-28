@@ -204,7 +204,7 @@ func addonUpgradeArgs(a addon, version string) []string {
 		"--repo", a.repo,
 		"--namespace", a.namespace,
 		"--version", version,
-		"--reuse-values",
+		"--reset-then-reuse-values",
 		"--wait",
 		"--timeout", "5m",
 	}
