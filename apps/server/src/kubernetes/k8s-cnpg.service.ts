@@ -3044,17 +3044,18 @@ export class K8sCnpgService implements OnApplicationBootstrap {
   ): Promise<{ installed: boolean; reason?: string; queries: unknown[] }> {
     const sql = `SELECT coalesce(json_agg(t), '[]'::json) FROM (
       SELECT queryid::text AS id,
-             left(query, 300) AS query,
-             calls,
-             round(total_exec_time::numeric, 2) AS total_ms,
-             round(mean_exec_time::numeric, 3) AS mean_ms,
-             round(max_exec_time::numeric, 2) AS max_ms,
-             rows,
-             shared_blks_hit AS blks_hit,
-             shared_blks_read AS blks_read
+             left(min(query), 300) AS query,
+             sum(calls) AS calls,
+             round(sum(total_exec_time)::numeric, 2) AS total_ms,
+             round(coalesce(sum(total_exec_time) / nullif(sum(calls), 0), 0)::numeric, 3) AS mean_ms,
+             round(max(max_exec_time)::numeric, 2) AS max_ms,
+             sum(rows) AS rows,
+             sum(shared_blks_hit) AS blks_hit,
+             sum(shared_blks_read) AS blks_read
       FROM pg_stat_statements
       WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
-      ORDER BY total_exec_time DESC
+      GROUP BY queryid
+      ORDER BY sum(total_exec_time) DESC
       LIMIT 100
     ) t;`;
     const r = await this.runPsqlInCnpg(namespace, clusterName, dbName, sql, { tuplesOnly: true });
